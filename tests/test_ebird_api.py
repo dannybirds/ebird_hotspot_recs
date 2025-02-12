@@ -72,12 +72,5 @@ class TestEbirdApi(unittest.TestCase):
         # json.dump should be called once with the response data
         mock_json_dump.assert_called_once_with(mock_response_data, ANY)
 
-    @patch("ebird_hotspot_recs.ebird_api.urllib.request.urlopen")
-    @patch("ebird_hotspot_recs.ebird_api.os.path.exists")
-    @patch("ebird_hotspot_recs.ebird_api.open", new_callable=mock_open)
-    def test_get_recent_checklists(self, mock_open, mock_exists, mock_urlopen):
-        # Your test implementation here
-        pass
-
 if __name__ == "__main__":
     unittest.main()

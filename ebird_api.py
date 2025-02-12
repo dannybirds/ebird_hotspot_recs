@@ -1,3 +1,4 @@
+from datetime import datetime
 import hashlib
 import os
 import sys
@@ -8,6 +9,7 @@ import json
 import logging
 
 DEFAULT_CACHE_DIR = os.path.expanduser("~/.ebird-api-cache")
+DEFAULT_MAX_RESULTS = 1000
 
 logger = logging.getLogger(__name__)
 
@@ -56,35 +58,25 @@ def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str]
             raise Exception(f"Error: {response.status}")
 
 
-def get_recent_checklists(hotspot_id: str, api_key: str, max_results: int=10) -> list[dict[str,Any]]:
+def get_observations_on_date(location_id: str, date: datetime, api_key: str=os.environ.get("EBIRD_API_KEY"), max_results: int=DEFAULT_MAX_RESULTS) -> list[dict[str,Any]]:
     """
-    Query recent checklists from an eBird hotspot.
+    Query species observed in an eBird location on a given day.
 
     Parameters:
-    hotspot_id (str): The eBird hotspot identifier.
-    api_key (str): Your eBird API key.
-    max_results (int): Maximum number of results to return (default is 10).
+    location_id (str): The eBird location identifier.
+    api_key (str): eBird API key.
+    date (datetime): The date for the query.
+    max_results (int): Maximum number of results to return.
 
     Returns:
-    list: A list of recent checklists.
+    list: A list of checklists for the specified date.
     """
-    url = f"https://api.ebird.org/v2/product/lists/{hotspot_id}"
+    url = f"https://api.ebird.org/v2/data/obs/{location_id}/historic/{date.year}/{date.month}/{date.day}"
     headers = {
         "X-eBirdApiToken": api_key
     }
     params = {
-        "maxResults": max_results
+        "maxResults": max_results,
     }
-    
+
     return get_cache_or_fetch(url, params, headers)
-
-def main():
-    logging.basicConfig(level=logging.DEBUG)
-    api_key = os.environ.get("EBIRD_API_KEY")
-    bedwell_bayfront_park = 'L266125'
-    prospect_park = 'L109516'
-    checklists = get_recent_checklists(prospect_park, api_key)
-    print(json.dumps(checklists, indent=4))
-
-if __name__ == "__main__":
-    main()
