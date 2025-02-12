@@ -77,6 +77,25 @@ def get_observations_on_date(location_id: str, date: datetime, api_key: str=os.e
     }
     params = {
         "maxResults": max_results,
+        "detail": "full"
     }
+
+    return get_cache_or_fetch(url, params, headers)
+
+def get_taxonomy(api_key: str=os.environ.get("EBIRD_API_KEY")):
+    """
+    Query the eBird taxonomy.
+
+    Parameters:
+    api_key (str): eBird API key.
+
+    Returns:
+    list: A list of species in the eBird taxonomy.
+    """
+    url = "https://api.ebird.org/v2/ref/taxonomy/ebird"
+    headers = {
+        "X-eBirdApiToken": api_key
+    }
+    params = {'fmt': 'json'}
 
     return get_cache_or_fetch(url, params, headers)

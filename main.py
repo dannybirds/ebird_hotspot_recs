@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 import sys
 
-from data_handling import get_historical_species_seen, get_species_seen
+from data_handling import get_historical_species_seen, get_species_seen, parse_life_list_csv
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,8 @@ def main():
         data = get_historical_species_seen(args.location, args.date, num_years=3, day_window=2)
         print(f"Observations around {args.date.strftime('%Y-%m-%d')}:")
         print(data)
+
+    print(parse_life_list_csv("/Users/dannywyatt/ebird_world_life_list.csv"))
 
 if __name__ == "__main__":
     main()
