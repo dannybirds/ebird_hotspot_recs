@@ -1,7 +1,6 @@
 from datetime import datetime
 import hashlib
 import os
-import sys
 from typing import Any
 import urllib.request
 import urllib.parse

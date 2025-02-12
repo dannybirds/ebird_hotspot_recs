@@ -84,6 +84,8 @@ def sci_name_to_code_map() -> dict[str, str]:
     """
     Query the eBird taxonomy and return a dictionary mapping scientific names to species codes.
 
+    The result is cached, so this function can be called many times but will only load the data once.
+
     Returns:
     dict[str, str]: A dictionary mapping scientific names to species codes.
     """
@@ -114,3 +116,25 @@ def parse_life_list_csv(life_list_csv_path: str) -> dict[Species, datetime]:
             )
             species_dates[sp] = datetime.strptime(row['Date'], "%d %b %Y")
     return species_dates
+
+def make_data_point(location: str, date: datetime, life_list_file: str, historical_years=5, day_window=7) -> tuple[dict[Species, set[str]], dict[Species, datetime], dict[Species, set[str]]]:
+    """
+    Create a data point for a given location and date.
+
+    Parameters:
+    location (str): The eBird location identifier.
+    date (datetime): The target date for hotspot recommendation.
+    life_list_file (str): The path to the life list CSV file.
+
+    Returns:
+    TBD
+    """
+    # read historical data for the target data
+    historical_sightings = get_historical_species_seen(location, date, num_years=historical_years, day_window=day_window)
+    # filter life list to only include species seen before the target date
+    life_list = {k: v for k,v in parse_life_list_csv(life_list_file).items() if v < date}
+    # get actual sightings on the target date, filtered to only include species not in the life list
+    actual_sightings = {k: v for k, v in get_species_seen(location, date, window=0).items() if k not in life_list}
+
+    return historical_sightings, life_list, actual_sightings
+    
