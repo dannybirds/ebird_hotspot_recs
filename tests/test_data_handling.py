@@ -1,8 +1,7 @@
 import unittest
 from datetime import datetime
-from data_handling import get_date_window
+from data_handling import get_date_window, get_historical_species_seen, get_species_seen, Species
 from unittest.mock import patch
-from data_handling import get_species_seen, Species
 
 class TestDataHandling(unittest.TestCase):
 
@@ -50,9 +49,9 @@ class TestDataHandling(unittest.TestCase):
         ]
         location_id = 'L123456'
         date = datetime(2023, 10, 1)
-        expected = [
-            Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis')
-        ]
+        expected: set[Species] = set(
+            [Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis')]
+        )
         result = get_species_seen(location_id, date, window=0)
         self.assertEqual(result, expected)
 
@@ -65,13 +64,43 @@ class TestDataHandling(unittest.TestCase):
         ]
         location_id = 'L123456'
         date = datetime(2023, 10, 1)
-        expected = [
+        expected = {
             Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis'),
             Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'),
             Species(common_name='American Robin', species_code='amerob', scientific_name='Turdus migratorius')
-        ]
+        }
         result = get_species_seen(location_id, date, window=1)
         self.assertCountEqual(result, expected)
+
+    @patch('data_handling.get_species_seen')
+    def test_get_historical_species_seen(self, mock_get_species_seen):
+        mock_get_species_seen.side_effect = [
+            {Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis')},
+            {Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata')},
+            {Species(common_name='American Robin', species_code='amerob', scientific_name='Turdus migratorius')}
+        ]
+        location_id = 'L123456'
+        target_date = datetime(2023, 10, 1)
+        num_years = 3
+        day_window = 1
+        expected = {
+            Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis'),
+            Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'),
+            Species(common_name='American Robin', species_code='amerob', scientific_name='Turdus migratorius')
+        }
+        result = get_historical_species_seen(location_id, target_date, num_years, day_window)
+        self.assertEqual(result, expected)
+
+    @patch('data_handling.get_species_seen')
+    def test_get_historical_species_seen_no_species(self, mock_get_species_seen):
+        mock_get_species_seen.return_value = set()
+        location_id = 'L123456'
+        target_date = datetime(2023, 10, 1)
+        num_years = 3
+        day_window = 1
+        expected = set()
+        result = get_historical_species_seen(location_id, target_date, num_years, day_window)
+        self.assertEqual(result, expected)
 
 if __name__ == '__main__':
     unittest.main()
