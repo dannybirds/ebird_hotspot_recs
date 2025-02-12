@@ -18,17 +18,17 @@ def main():
     parser = argparse.ArgumentParser(description="Main for testing things right now.")
     parser.add_argument('--date', type=valid_date, help='Target date as yyyy-mm-dd')
     parser.add_argument('--location', type=str, help='EBird location ID')
+    parser.add_argument('--life_list', type=str, help='CSV file path to life list')
     args = parser.parse_args()
 
     # Configure logging to print everything to stdout
     logging.basicConfig(level=logging.DEBUG, handlers=[logging.StreamHandler(sys.stdout)])
 
-    if args.date:
-        data = get_historical_species_seen(args.location, args.date, num_years=3, day_window=2)
-        print(f"Observations around {args.date.strftime('%Y-%m-%d')}:")
-        print(data)
+    historical_data = get_historical_species_seen(args.location, args.date, num_years=3, day_window=2)
+    life_list = parse_life_list_csv(args.life_list)
 
-    print(parse_life_list_csv("/Users/dannywyatt/ebird_world_life_list.csv"))
+    lifers = {sp: locs for sp, locs in historical_data.items() if sp not in life_list}
+    print(lifers)
 
 if __name__ == "__main__":
     main()
