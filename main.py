@@ -1,10 +1,12 @@
 import argparse
 import logging
 from datetime import datetime
+import pprint
 import sys
 
 from data_handling import get_species_seen, parse_life_list_csv
-from recommenders import AnyHistoricalSightingRecommender
+from evals import evaluate
+from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommendations
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +33,17 @@ def main():
     recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=7)
     recs = recommender.recommend(args.location, args.date, life_list)
     print("RECOMMENDATIONS\n")
-    print(recs)
+    pprint.pp(recs)
     print("\n")
 
     # get actual sightings on the target date, filtered to only include species not in the life list
     ground_truth_sightings = {k: v for k, v in get_species_seen(args.location, args.date, window=0).items() if k not in life_list}    
     print("GROUND TRUTH")
-    print(ground_truth_sightings)
+    pprint.pp(sightings_to_recommendations(ground_truth_sightings))
     print("\n")
+
+    print("ERRORS")
+    pprint.pp(evaluate(recs, sightings_to_recommendations(ground_truth_sightings)))
 
 if __name__ == "__main__":
     main()

@@ -1,13 +1,12 @@
 import unittest
 from datetime import datetime
 from unittest.mock import patch
-from recommenders import AnyHistoricalSightingRecommender, Recommendation
+from recommenders import AnyHistoricalSightingRecommender, Recommendation, sightings_to_recommendations
 from data_handling import Species
 
-class TestAnyHistoricalSightingRecommender(unittest.TestCase):
+class TestRecommenders(unittest.TestCase):
     @patch('recommenders.get_historical_species_seen')
-    def test_recommend(self, mock_get_historical_species_seen):
-        # Mock data
+    def test_any_historical_sighting_recommender(self, mock_get_historical_species_seen):
         location = "Test Location"
         target_date = datetime(2023, 10, 1)
 
@@ -22,24 +21,36 @@ class TestAnyHistoricalSightingRecommender(unittest.TestCase):
         }
         mock_get_historical_species_seen.return_value = mock_historical_sightings
 
-        # Instantiate recommender
         recommender = AnyHistoricalSightingRecommender(historical_years=3, day_window=1)
-
-        # Call recommend method
         recommendations = recommender.recommend(location, target_date, life_list)
 
-        # Expected recommendations
         expected_recommendations = [
             Recommendation(location="Location 1", score=2, species={b, c}),
             Recommendation(location="Location 2", score=1, species={b})
         ]
 
-        # Assertions
-        self.assertEqual(len(recommendations), len(expected_recommendations))
-        for rec, expected_rec in zip(recommendations, expected_recommendations):
-            self.assertEqual(rec.location, expected_rec.location)
-            self.assertEqual(rec.score, expected_rec.score)
-            self.assertEqual(rec.species, expected_rec.species)
+        self.assertEqual(recommendations, expected_recommendations)
+
+    def test_sightings_to_recommendations(self):
+        a = Species("Species A", "A a", "aaa")
+        b = Species("Species B", "B b", "bbb")
+        c = Species("Species C", "C c", "ccc")
+        
+        sightings = {
+            a: {"Location 1", "Location 2"},
+            b: {"Location 1"},
+            c: {"Location 3"}
+        }
+
+        expected_recommendations = [
+            Recommendation(location="Location 1", score=2, species={a, b}),
+            Recommendation(location="Location 2", score=1, species={a}),
+            Recommendation(location="Location 3", score=1, species={c})
+        ]
+
+        recommendations = sightings_to_recommendations(sightings)
+        self.assertEqual(recommendations, expected_recommendations)
+
 
 if __name__ == '__main__':
     unittest.main()

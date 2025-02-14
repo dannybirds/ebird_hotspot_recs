@@ -10,6 +10,22 @@ class Recommendation:
     score: float
     species: set[Species]
 
+
+def sightings_to_recommendations(sightings: dict[Species, set[str]]) -> list[Recommendation]:
+    """
+    Convert a dictionary of species to locations to a list of recommendations. The score is the number of species seen at the location.
+    
+    Useful for turning ground truth sightings into recommendations that have the correct number of species seen.
+    """
+    locs_to_species: dict[str, set[Species]] = dict()
+    for species, locs in sightings.items():
+        for loc in locs:
+            if loc not in locs_to_species:
+                locs_to_species[loc] = set()
+            locs_to_species[loc].add(species)
+    recs = [Recommendation(location=loc, score=len(species), species=species) for loc, species in locs_to_species.items()]
+    return sorted(recs, key=lambda r: r.score, reverse=True)
+
 class HotspotRecommender(ABC):
     @abstractmethod
     def recommend(self, location: str, target_date: datetime, life_list: dict[Species, datetime]) -> list[Recommendation]:
@@ -25,12 +41,5 @@ class AnyHistoricalSightingRecommender(HotspotRecommender):
         historical_sightings = get_historical_species_seen(location, target_date, num_years=self.historical_years, day_window=self.day_window)
         # filter to unseen species
         historical_sightings = {k: v for k, v in historical_sightings.items() if k not in life_list}
-        # invert to key by locations, and score by number of species
-        locs_to_species: dict[str, set[Species]] = dict()
-        for species, locs in historical_sightings.items():
-            for loc in locs:
-                if loc not in locs_to_species:
-                    locs_to_species[loc] = set()
-                locs_to_species[loc].add(species)
-        recs = [Recommendation(location=loc, score=len(species), species=species) for loc, species in locs_to_species.items()]
-        return sorted(recs, key=lambda r: r.score, reverse=True)
+        return sightings_to_recommendations(historical_sightings)
+    
