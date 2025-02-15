@@ -1,18 +1,18 @@
 import unittest
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from recommenders import AnyHistoricalSightingRecommender, Recommendation, sightings_to_recommendations
 from data_handling import Species
 
 class TestRecommenders(unittest.TestCase):
     @patch('recommenders.get_historical_species_seen')
-    def test_any_historical_sighting_recommender(self, mock_get_historical_species_seen):
+    def test_any_historical_sighting_recommender(self, mock_get_historical_species_seen: MagicMock):
         location = "Test Location"
         target_date = datetime(2023, 10, 1)
 
-        a = ("Species A", "A a", "aaa")
-        b = ("Species B", "B b", "bbb")
-        c = ("Species C", "C c", "ccc")
+        a = Species("Species A", "A a", "aaa")
+        b = Species("Species B", "B b", "bbb")
+        c = Species("Species C", "C c", "ccc")
         life_list = {a: datetime(2022, 5, 1)}
         mock_historical_sightings = {
             b: ["Location 1", "Location 2"],

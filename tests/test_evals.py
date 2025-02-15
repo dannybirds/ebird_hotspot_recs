@@ -1,11 +1,12 @@
 import unittest
+from data_handling import Species
 from recommenders import Recommendation
-from evals import evaluate, RecMetrics
+from evals import evaluate
 
 class TestEvaluate(unittest.TestCase):
 
     def test_evaluate_exact_match(self):
-        a = ("Species A", "A a", "aaa")
+        a = Species("Species A", "A a", "aaa")
         recs = [Recommendation(location="loc1", score=1.0, species={a}), Recommendation(location="loc2", score=2.0, species={a})]
         ground_truth = [Recommendation(location="loc1", score=1.0, species={a}), Recommendation(location="loc2", score=2.0, species={a})]
         metrics = evaluate(recs, ground_truth)
@@ -17,7 +18,7 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(metrics.false_negatives, 0)
 
     def test_evaluate_one_mismatch(self):
-        a = ("Species A", "A a", "aaa")
+        a = Species("Species A", "A a", "aaa")
         recs = [Recommendation(location="loc1", score=1.0, species={a}), Recommendation(location="loc3", score=3.0, species={a})]
         ground_truth = [Recommendation(location="loc1", score=1.0, species={a}), Recommendation(location="loc2", score=2.0, species={a})]
         metrics = evaluate(recs, ground_truth)
@@ -29,7 +30,7 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(metrics.false_negatives, 1)
 
     def test_evaluate_no_matches(self):
-        a = ("Species A", "A a", "aaa")
+        a = Species("Species A", "A a", "aaa")
         recs = [Recommendation(location="loc3", score=3.0, species={a}), Recommendation(location="loc4", score=4.0, species={a})]
         ground_truth = [Recommendation(location="loc1", score=1.0, species={a}), Recommendation(location="loc2", score=2.0, species={a})]
         metrics = evaluate(recs, ground_truth)
@@ -41,8 +42,8 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(metrics.false_negatives, 2)
 
     def test_evaluate_empty_recs(self):
-        a = ("Species A", "A a", "aaa")
-        recs = []
+        a = Species("Species A", "A a", "aaa")
+        recs : list[Recommendation] = []
         ground_truth = [Recommendation(location="loc1", score=1.0, species={a}), Recommendation(location="loc2", score=2.0, species={a})]
         metrics = evaluate(recs, ground_truth)
         self.assertEqual(metrics.found_lifers, 0)
@@ -53,9 +54,9 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(metrics.false_negatives, 2)
 
     def test_evaluate_empty_ground_truth(self):
-        a = ("Species A", "A a", "aaa")
+        a = Species("Species A", "A a", "aaa")
         recs = [Recommendation(location="loc1", score=1.0, species={a}), Recommendation(location="loc2", score=2.0, species={a})]
-        ground_truth = []
+        ground_truth : list[Recommendation] = []
         metrics = evaluate(recs, ground_truth)
         self.assertEqual(metrics.found_lifers, 0)
         self.assertEqual(metrics.missed_lifers, 0)

@@ -12,6 +12,22 @@ DEFAULT_MAX_RESULTS = 1000
 
 logger = logging.getLogger(__name__)
 
+
+def get_api_key_or_fail() -> str:
+    """
+    Get the eBird API key from the environment variables.
+
+    Raises:
+    Exception: If the eBird API key is not set.
+
+    Returns:
+    str: The eBird API key.
+    """
+    api_key = os.environ.get("EBIRD_API_KEY")
+    if api_key is None:
+        raise Exception("EBIRD_API_KEY environment variable not set")
+    return api_key
+
 def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str] | None, cache_dir: str = DEFAULT_CACHE_DIR) -> Any:
     """
     Get a cached response for a given URL, params, and headers; or fetch and cache the response if not cached.
@@ -43,7 +59,7 @@ def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str]
             return json.load(cache_file)
     
     logger.debug(f"Cache miss: {cache_path}")
-    req = urllib.request.Request(url, headers=headers)
+    req = urllib.request.Request(url, headers=headers if headers else {})
     
     with urllib.request.urlopen(req) as response:
         if response.status == 200:
@@ -57,7 +73,7 @@ def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str]
             raise Exception(f"Error: {response.status}")
 
 
-def get_observations_on_date(location_id: str, date: datetime, api_key: str=os.environ.get("EBIRD_API_KEY"), max_results: int=DEFAULT_MAX_RESULTS) -> list[dict[str,Any]]:
+def get_observations_on_date(location_id: str, date: datetime, api_key: str = get_api_key_or_fail(), max_results: int=DEFAULT_MAX_RESULTS) -> list[dict[str,Any]]:
     """
     Query species observed in an eBird location on a given day.
 
@@ -74,14 +90,14 @@ def get_observations_on_date(location_id: str, date: datetime, api_key: str=os.e
     headers = {
         "X-eBirdApiToken": api_key
     }
-    params = {
-        "maxResults": max_results,
+    params: dict[str, str] = {
+        "maxResults": str(max_results),
         "detail": "full"
     }
 
     return get_cache_or_fetch(url, params, headers)
 
-def get_taxonomy(api_key: str=os.environ.get("EBIRD_API_KEY")):
+def get_taxonomy(api_key: str=get_api_key_or_fail()) -> Any:
     """
     Query the eBird taxonomy.
 

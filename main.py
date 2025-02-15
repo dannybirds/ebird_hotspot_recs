@@ -10,7 +10,7 @@ from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommen
 
 logger = logging.getLogger(__name__)
 
-def valid_date(s):
+def valid_date(s: str):
     try:
         return datetime.strptime(s, "%Y-%m-%d")
     except ValueError:

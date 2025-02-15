@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 
-from data_handling import Species, get_historical_species_seen, get_species_seen
+from data_handling import Species, get_historical_species_seen
 
 @dataclass(frozen=True)
 class Recommendation:

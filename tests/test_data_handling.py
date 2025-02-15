@@ -1,9 +1,7 @@
 import unittest
 from datetime import datetime
 from data_handling import get_date_window, get_historical_species_seen, get_species_seen, Species, parse_life_list_csv, sci_name_to_code_map
-from unittest.mock import patch, mock_open
-from io import StringIO
-import csv
+from unittest.mock import MagicMock, patch, mock_open
 
 class TestDataHandling(unittest.TestCase):
 
@@ -42,10 +40,10 @@ class TestDataHandling(unittest.TestCase):
         d = datetime(2023, 10, 1)
         W = -1
         with self.assertRaises(ValueError):
-            result = get_date_window(d, W)
+            get_date_window(d, W)
 
     @patch('data_handling.get_observations_on_date')
-    def test_get_species_seen_no_window(self, mock_get_observations_on_date):
+    def test_get_species_seen_no_window(self, mock_get_observations_on_date: MagicMock):
         mock_get_observations_on_date.return_value = [
             {'comName': 'Northern Cardinal', 'speciesCode': 'nocar', 'sciName': 'Cardinalis cardinalis', 'locationPrivate': False, 'locId': 'L123456'}
         ]
@@ -58,7 +56,7 @@ class TestDataHandling(unittest.TestCase):
         self.assertEqual(result, expected)
 
     @patch('data_handling.get_observations_on_date')
-    def test_get_species_seen_with_window(self, mock_get_observations_on_date):
+    def test_get_species_seen_with_window(self, mock_get_observations_on_date: MagicMock):
         mock_get_observations_on_date.side_effect = [
             [{'comName': 'Northern Cardinal', 'speciesCode': 'nocar', 'sciName': 'Cardinalis cardinalis', 'locationPrivate': False, 'locId': 'L123456'}],
             [{'comName': 'Blue Jay', 'speciesCode': 'bluja', 'sciName': 'Cyanocitta cristata', 'locationPrivate': False, 'locId': 'L234567'}],
@@ -75,7 +73,7 @@ class TestDataHandling(unittest.TestCase):
         self.assertCountEqual(result, expected)
 
     @patch('data_handling.get_observations_on_date')
-    def test_get_species_seen_excludes_private_locations(self, mock_get_observations_on_date):
+    def test_get_species_seen_excludes_private_locations(self, mock_get_observations_on_date: MagicMock):
         mock_get_observations_on_date.side_effect = [
             [{'comName': 'Northern Cardinal', 'speciesCode': 'nocar', 'sciName': 'Cardinalis cardinalis', 'locationPrivate': False, 'locId': 'L123456'}],
             [{'comName': 'Blue Jay', 'speciesCode': 'bluja', 'sciName': 'Cyanocitta cristata', 'locationPrivate': True, 'locId': 'L234567'}],
@@ -92,7 +90,7 @@ class TestDataHandling(unittest.TestCase):
         self.assertCountEqual(result, expected)        
 
     @patch('data_handling.get_species_seen')
-    def test_get_historical_species_seen(self, mock_get_species_seen):
+    def test_get_historical_species_seen(self, mock_get_species_seen: MagicMock):
         mock_get_species_seen.side_effect = [
             {Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis'): {'L123456'}},
             {Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'): {'L234567'}},
@@ -111,7 +109,7 @@ class TestDataHandling(unittest.TestCase):
         self.assertEqual(result, expected)
 
     @patch('data_handling.get_species_seen')
-    def test_get_historical_species_seen_no_species(self, mock_get_species_seen):
+    def test_get_historical_species_seen_no_species(self, mock_get_species_seen: MagicMock):
         mock_get_species_seen.return_value = dict()
         location_id = 'L123456'
         target_date = datetime(2023, 10, 1)
@@ -122,7 +120,7 @@ class TestDataHandling(unittest.TestCase):
         self.assertEqual(result, expected)
 
     @patch('ebird_api.get_taxonomy')
-    def test_sci_name_to_code_map(self, mock_get_taxonomy):
+    def test_sci_name_to_code_map(self, mock_get_taxonomy: MagicMock):
         mock_get_taxonomy.return_value = [
             {'sciName': 'Cardinalis cardinalis', 'speciesCode': 'nocar'},
             {'sciName': 'Cyanocitta cristata', 'speciesCode': 'bluja'},
@@ -141,7 +139,7 @@ class TestDataHandling(unittest.TestCase):
 
     @patch('data_handling.sci_name_to_code_map')
     @patch('builtins.open', new_callable=mock_open, read_data="Common Name,Scientific Name,Date\nNorthern Cardinal,Cardinalis cardinalis,01 Oct 2023\nBlue Jay,Cyanocitta cristata,02 Oct 2023\n")
-    def test_parse_life_list_csv(self, mock_file, mock_sci_name_to_code_map):
+    def test_parse_life_list_csv(self, mock_file: MagicMock, mock_sci_name_to_code_map: MagicMock):
         mock_sci_name_to_code_map.return_value = {
             'Cardinalis cardinalis': 'nocar',
             'Cyanocitta cristata': 'bluja'
@@ -155,7 +153,7 @@ class TestDataHandling(unittest.TestCase):
 
     @patch('data_handling.sci_name_to_code_map')
     @patch('builtins.open', new_callable=mock_open, read_data="Common Name,Scientific Name,Date\n")
-    def test_parse_life_list_csv_empty_file(self, mock_file, mock_sci_name_to_code_map):
+    def test_parse_life_list_csv_empty_file(self, mock_file: MagicMock, mock_sci_name_to_code_map: MagicMock):
         mock_sci_name_to_code_map.return_value = {}
         expected = {}
         result = parse_life_list_csv('fake_path.csv')
@@ -163,7 +161,7 @@ class TestDataHandling(unittest.TestCase):
 
     @patch('data_handling.sci_name_to_code_map')
     @patch('builtins.open', new_callable=mock_open, read_data="Common Name,Scientific Name,Date\nNorthern Cardinal,Cardinalis cardinalis,01 Oct 2023\nBlue Jay,Cyanocitta cristata,invalid_date\n")
-    def test_parse_life_list_csv_invalid_date(self, mock_file, mock_sci_name_to_code_map):
+    def test_parse_life_list_csv_invalid_date(self, mock_file: MagicMock, mock_sci_name_to_code_map: MagicMock):
         mock_sci_name_to_code_map.return_value = {
             'Cardinalis cardinalis': 'nocar',
             'Cyanocitta cristata': 'bluja'
