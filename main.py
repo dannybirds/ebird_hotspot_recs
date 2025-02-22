@@ -5,6 +5,8 @@ import pprint
 import sys
 
 from data_handling import get_species_seen, parse_life_list_csv
+from ebird_db import create_life_lists
+from common import LifeList
 from evals import EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, evaluate, run_end_to_end_evals
 from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommendations
 
@@ -17,16 +19,8 @@ def valid_date(s: str):
         logger.warning(f"Not a valid date: '{s}'.")
         return datetime.today()
 
-def main():
-    parser = argparse.ArgumentParser(description="Main for testing things right now.")
-    parser.add_argument('--date', type=valid_date, help='Target date as yyyy-mm-dd', default=datetime.today())
-    parser.add_argument('--location', type=str, help='EBird location ID')
-    parser.add_argument('--life_list', type=str, help='CSV file path to life list')
-    args = parser.parse_args()
 
-    # Configure logging to print everything to stdout
-    logging.basicConfig(level=logging.DEBUG, handlers=[logging.StreamHandler(sys.stdout)])
-
+def make_recommendation(args: argparse.Namespace) -> None:
     # Read life list and filter to only include species seen before the target date.
     life_list = {k: v for k,v in parse_life_list_csv(args.life_list).items() if v < args.date}
 
@@ -50,6 +44,36 @@ def main():
 
     print("AGGREGATE METRICS")
     pprint.pp(agg_metrics)
+
+def make_e2e_eval_data(args: argparse.Namespace) -> None:
+    observer_ids = []
+    with open(args.eval_observer_ids) as f:
+        observer_ids = [line.strip() for line in f]
+    life_lists: dict[str, LifeList] = create_life_lists(observer_ids)
+    pprint.pp(life_lists)
+
+def main():
+    parser = argparse.ArgumentParser(description="Main for testing things right now.")
+    parser.add_argument('--mode', type=str, help='Mode to run', choices=['recommend', 'make_e2e_eval_data'], default='recommend')
+    parser.add_argument('--date', type=valid_date, help='Target date as yyyy-mm-dd', default=datetime.today())
+    parser.add_argument('--location', type=str, help='EBird location ID')
+    parser.add_argument('--life_list', type=str, help='CSV file path to life list')
+    parser.add_argument('--eval_observer_ids', type=str, help='path to observer IDs to use for evaluation')
+    args = parser.parse_args()
+
+    # Configure logging to print everything to stdout
+    logging.basicConfig(level=logging.DEBUG, handlers=[logging.StreamHandler(sys.stdout)])
+
+    match args.mode:
+        case 'recommend':
+            make_recommendation(args)
+        case 'make_e2e_eval_data':
+            make_e2e_eval_data(args)
+        case _:
+            logger.error(f"Unknown mode: {args.mode}")
+            sys.exit(1)
+
+
     
 
 if __name__ == "__main__":
