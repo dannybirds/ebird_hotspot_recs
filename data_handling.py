@@ -1,14 +1,9 @@
 from datetime import datetime, timedelta
-from dataclasses import dataclass
+
 import functools
 
 from ebird_api import get_observations_on_date
-
-@dataclass(frozen=True)
-class Species:
-    common_name: str
-    species_code: str
-    scientific_name: str
+from common import LifeList, Sightings, Species, EndToEndEvalDatapoint
 
 
 def get_date_window(d: datetime, w: int) -> list[datetime]:
@@ -26,7 +21,7 @@ def get_date_window(d: datetime, w: int) -> list[datetime]:
         raise ValueError(f"Window size w must be non-negative, got {w=}")
     return [d + timedelta(days=i) for i in range(-w, w + 1)]
 
-def get_species_seen(location_id: str, date: datetime, window: int=0) -> dict[Species, set[str]]:
+def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightings:
     """
     Query species observed in an eBird location on +/- window days around the given date.
 
@@ -56,7 +51,7 @@ def get_species_seen(location_id: str, date: datetime, window: int=0) -> dict[Sp
                 species_seen[sp].add(species['locId'])
     return species_seen
 
-def get_historical_species_seen(location_id: str, target_date: datetime, num_years: int, day_window: int) -> dict[Species, set[str]]:
+def get_historical_species_seen(location_id: str, target_date: datetime, num_years: int, day_window: int) -> Sightings:
     """
     Query species observed in an eBird location for day_window days around (target_date.month, target_date.day) for num_years before target_date.year.
 
@@ -94,7 +89,7 @@ def sci_name_to_code_map() -> dict[str, str]:
     return {species['sciName']: species['speciesCode'] for species in taxonomy}
 
 
-def parse_life_list_csv(life_list_csv_path: str) -> dict[Species, datetime]:
+def parse_life_list_csv(life_list_csv_path: str) -> LifeList:
     """
     Parse a life list CSV file and return a dictionary of species and the date they were first seen.
 
@@ -116,6 +111,13 @@ def parse_life_list_csv(life_list_csv_path: str) -> dict[Species, datetime]:
             )
             species_dates[sp] = datetime.strptime(row['Date'], "%d %b %Y")
     return species_dates
+
+
+def make_end_to_end_eval_dataset(num_birders: int, dates: list[datetime]) -> list[EndToEndEvalDatapoint]:
+    """
+    Make a dataset for end-to-end evaluation.
+    """
+    return []
 
 
     

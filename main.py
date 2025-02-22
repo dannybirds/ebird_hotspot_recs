@@ -5,7 +5,7 @@ import pprint
 import sys
 
 from data_handling import get_species_seen, parse_life_list_csv
-from evals import evaluate
+from evals import EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, evaluate, run_end_to_end_evals
 from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommendations
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,13 @@ def main():
 
     print("ERRORS")
     pprint.pp(evaluate(recs, sightings_to_recommendations(ground_truth_sightings)))
+
+    dataset = [EndToEndEvalDatapoint(args.location, args.date, life_list, sightings_to_recommendations(ground_truth_sightings))]
+    agg_metrics = aggregate_end_to_end_eval_metrics(run_end_to_end_evals(recommender, dataset))
+
+    print("AGGREGATE METRICS")
+    pprint.pp(agg_metrics)
+    
 
 if __name__ == "__main__":
     main()

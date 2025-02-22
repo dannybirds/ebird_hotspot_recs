@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from recommenders import Recommendation
+from common import EndToEndEvalDatapoint, Recommendation
+from recommenders import HotspotRecommender
 
 @dataclass
 class RecMetrics:
@@ -9,6 +10,16 @@ class RecMetrics:
     true_positives: int = 0
     false_positives: int = 0
     false_negatives: int = 0
+
+@dataclass
+class EndToEndAggregateMetrics:
+    n: int = 0
+    found_lifers: float = 0
+    missed_lifers: float = 0
+    abs_error: float = 0.0
+    true_positives: float = 0
+    false_positives: float = 0
+    false_negatives: float = 0
 
 def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation]) -> RecMetrics:
     """
@@ -40,3 +51,32 @@ def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation]) -> 
             metrics.abs_error += gt.score
             metrics.false_negatives += 1
     return metrics
+
+
+def run_end_to_end_evals(recommender: HotspotRecommender, dataset: list[EndToEndEvalDatapoint]) -> list[RecMetrics]:
+    """
+    Run end-to-end evaluations on a dataset.
+    """
+    return [
+        evaluate(
+            recommender.recommend(datapoint.target_location, datapoint.target_date, datapoint.life_list),
+            datapoint.ground_truth
+        ) 
+        for datapoint in dataset
+    ]
+
+def aggregate_end_to_end_eval_metrics(metrics: list[RecMetrics]) -> EndToEndAggregateMetrics:
+    """
+    Aggregate end-to-end evaluation metrics.
+    """
+    agg = EndToEndAggregateMetrics()
+    agg.n = len(metrics)
+    for m in metrics:
+        agg.found_lifers += m.found_lifers
+        agg.missed_lifers += m.missed_lifers
+        agg.abs_error += m.abs_error
+        agg.true_positives += m.true_positives
+        agg.false_positives += m.false_positives
+        agg.false_negatives += m.false_negatives
+    
+    return agg

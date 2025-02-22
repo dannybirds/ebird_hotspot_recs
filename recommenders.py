@@ -1,14 +1,8 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from datetime import datetime
 
-from data_handling import Species, get_historical_species_seen
-
-@dataclass(frozen=True)
-class Recommendation:
-    location: str
-    score: float
-    species: set[Species]
+from data_handling import get_historical_species_seen
+from common import LifeList, Species, Recommendation
 
 
 def sightings_to_recommendations(sightings: dict[Species, set[str]]) -> list[Recommendation]:
@@ -28,7 +22,7 @@ def sightings_to_recommendations(sightings: dict[Species, set[str]]) -> list[Rec
 
 class HotspotRecommender(ABC):
     @abstractmethod
-    def recommend(self, location: str, target_date: datetime, life_list: dict[Species, datetime]) -> list[Recommendation]:
+    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         pass
 
 class AnyHistoricalSightingRecommender(HotspotRecommender):
@@ -36,7 +30,7 @@ class AnyHistoricalSightingRecommender(HotspotRecommender):
         self.historical_years = historical_years
         self.day_window = day_window
 
-    def recommend(self, location: str, target_date: datetime, life_list: dict[Species, datetime]) -> list[Recommendation]:
+    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         # read historical data for the target date
         historical_sightings = get_historical_species_seen(location, target_date, num_years=self.historical_years, day_window=self.day_window)
         # filter to unseen species
