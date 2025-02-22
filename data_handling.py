@@ -5,7 +5,6 @@ import functools
 from ebird_api import get_observations_on_date
 from common import LifeList, Sightings, Species, EndToEndEvalDatapoint
 
-
 def get_date_window(d: datetime, w: int) -> list[datetime]:
     """
     Get a list of datetimes within a window around a given datetime.
@@ -111,13 +110,6 @@ def parse_life_list_csv(life_list_csv_path: str) -> LifeList:
             )
             species_dates[sp] = datetime.strptime(row['Date'], "%d %b %Y")
     return species_dates
-
-
-def make_end_to_end_eval_dataset(num_birders: int, dates: list[datetime]) -> list[EndToEndEvalDatapoint]:
-    """
-    Make a dataset for end-to-end evaluation.
-    """
-    return []
 
 
     
