@@ -1,12 +1,13 @@
 import argparse
+import json
 import logging
 from datetime import datetime
 import pprint
 import sys
 
 from data_handling import get_species_seen, parse_life_list_csv
-from ebird_db import create_life_lists, lookup_counties_with_lifers
-from common import LifeList
+from ebird_db import create_life_lists, lookup_groundtruth_counties
+from common import LifeList, to_json_default
 from evals import EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, evaluate, run_end_to_end_evals
 from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommendations
 
@@ -31,7 +32,7 @@ def make_recommendation(args: argparse.Namespace) -> None:
     print("\n")
 
     # get actual sightings on the target date, filtered to only include species not in the life list
-    ground_truth_sightings = {k: v for k, v in get_species_seen(args.location, args.date, window=0).items() if k not in life_list}    
+    ground_truth_sightings = {k: v for k, v in get_species_seen(args.location, args.date, window=0).items() if k.species_code not in life_list}    
     print("GROUND TRUTH")
     pprint.pp(sightings_to_recommendations(ground_truth_sightings))
     print("\n")
@@ -53,9 +54,13 @@ def make_e2e_eval_data(args: argparse.Namespace) -> None:
     for k in life_lists.values():
         print("LIFE LIST:")
         pprint.pp(k)
-        counties = lookup_counties_with_lifers(k, args.date)
-        print("COUNTIES:")
-        pprint.pp(counties)
+        datapoints = lookup_groundtruth_counties(k, args.date)
+        print("DATAPOINTS:")
+        pprint.pp(datapoints)
+        for d in datapoints:
+            print("DATAPOINT:")
+            pprint.pp(d)
+            pprint.pp(json.dumps(d, default=to_json_default))
 
 def main():
     parser = argparse.ArgumentParser(description="Main for testing things right now.")
@@ -63,7 +68,8 @@ def main():
     parser.add_argument('--date', type=valid_date, help='Target date as yyyy-mm-dd', default=datetime.today())
     parser.add_argument('--location', type=str, help='EBird location ID')
     parser.add_argument('--life_list', type=str, help='CSV file path to life list')
-    parser.add_argument('--eval_observer_ids', type=str, help='path to observer IDs to use for evaluation')
+    parser.add_argument('--eval_observer_ids', type=str, help='path to observer IDs to use for make_e2e_eval_data')
+    parser.add_argument('--eval_output_file', type=str, help='file to save make_e2e_eval_data to')
     args = parser.parse_args()
 
     # Configure logging to print everything to stdout

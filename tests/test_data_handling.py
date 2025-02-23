@@ -145,8 +145,8 @@ class TestDataHandling(unittest.TestCase):
             'Cyanocitta cristata': 'bluja'
         }
         expected = {
-            Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis'): datetime(2023, 10, 1),
-            Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'): datetime(2023, 10, 2)
+            'nocar': datetime(2023, 10, 1),
+            'bluja': datetime(2023, 10, 2)
         }
         result = parse_life_list_csv('fake_path.csv')
         self.assertEqual(result, expected)

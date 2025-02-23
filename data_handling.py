@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import functools
 
 from ebird_api import get_observations_on_date
-from common import LifeList, Sightings, Species, EndToEndEvalDatapoint
+from common import LifeList, Sightings, Species
 
 def get_date_window(d: datetime, w: int) -> list[datetime]:
     """
@@ -90,25 +90,21 @@ def sci_name_to_code_map() -> dict[str, str]:
 
 def parse_life_list_csv(life_list_csv_path: str) -> LifeList:
     """
-    Parse a life list CSV file and return a dictionary of species and the date they were first seen.
+    Parse a life list CSV file and return a dictionary of species codes and the date they were first seen.
 
     Parameters:
     life_list_csv_path (str): The path to the life list CSV file.
 
     Returns:
-    dict[Species, datetime]: A dictionary of species and the date they were first seen.
+    dict[Species, datetime]: A dictionary of species code and the date they were first seen.
     """
     import csv
-    species_dates: dict[Species, datetime] = dict()
+    species_dates: LifeList = dict()
     with open(life_list_csv_path, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            sp = Species(
-                common_name=row['Common Name'],
-                species_code=sci_name_to_code_map()[row['Scientific Name']],
-                scientific_name=row['Scientific Name']
-            )
-            species_dates[sp] = datetime.strptime(row['Date'], "%d %b %Y")
+            s = sci_name_to_code_map()[row['Scientific Name']]
+            species_dates[s] = datetime.strptime(row['Date'], "%d %b %Y")
     return species_dates
 
 
