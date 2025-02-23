@@ -1,5 +1,4 @@
 import os
-import pprint
 import psycopg
 from datetime import datetime
 import psycopg.rows
@@ -13,7 +12,7 @@ def open_connection(autocommit: bool=False) -> psycopg.Connection:
 
 def create_life_lists(observer_ids: list[str]) -> dict[str, LifeList]:
     """
-    Create a life list for an observer.
+    Create life lists for a list of observers.
     """
 
     q = """
@@ -35,7 +34,6 @@ def create_life_lists(observer_ids: list[str]) -> dict[str, LifeList]:
         with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
             cur.execute(q, [observer_ids,])
             rows = cur.fetchall()
-            pprint.pp(rows)
 
     life_lists: dict[str,LifeList] = {}
     for row in rows:
@@ -48,15 +46,26 @@ def create_life_lists(observer_ids: list[str]) -> dict[str, LifeList]:
         first_seen = row.pop('first_seen')
         if observer_id not in life_lists:
             life_lists[observer_id] = {}
-        life_lists[observer_id][s] = first_seen
+        life_lists[observer_id][s] = datetime.combine(first_seen, datetime.min.time())
     return life_lists
 
 def lookup_counties_with_lifers(life_list: LifeList, target_date: datetime) -> list[str]:
     """
     Lookup the counties that have lifers on the target date.
     """
-    #counties = set[str]
-    #for species, date in life_list.items():
-    #    if date <= target_date:
-    #        #counties.add(species.county)
-    return []
+    q = """
+    SELECT 
+        DISTINCT species_code, observation_date, county_code
+    FROM observations JOIN checklists USING (sampling_event_id)
+    WHERE NOT (species_code = ANY(%s)) AND observation_date=%s;
+    """
+    seen_species = [s.species_code for s in life_list.keys() if life_list[s] < target_date]
+    with open_connection() as conn:
+        with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
+            cur.execute(q, [seen_species,target_date])
+            rows = cur.fetchall()
+
+    new_species = {row['species_code'] for row in rows}
+    assert set(new_species) & set(seen_species) == set()
+    counties = {row['county_code'] for row in rows}
+    return list(counties)

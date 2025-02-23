@@ -5,7 +5,7 @@ import pprint
 import sys
 
 from data_handling import get_species_seen, parse_life_list_csv
-from ebird_db import create_life_lists
+from ebird_db import create_life_lists, lookup_counties_with_lifers
 from common import LifeList
 from evals import EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, evaluate, run_end_to_end_evals
 from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommendations
@@ -50,7 +50,12 @@ def make_e2e_eval_data(args: argparse.Namespace) -> None:
     with open(args.eval_observer_ids) as f:
         observer_ids = [line.strip() for line in f]
     life_lists: dict[str, LifeList] = create_life_lists(observer_ids)
-    pprint.pp(life_lists)
+    for k in life_lists.values():
+        print("LIFE LIST:")
+        pprint.pp(k)
+        counties = lookup_counties_with_lifers(k, args.date)
+        print("COUNTIES:")
+        pprint.pp(counties)
 
 def main():
     parser = argparse.ArgumentParser(description="Main for testing things right now.")
