@@ -59,7 +59,8 @@ def lookup_groundtruth_counties(life_list: LifeList, target_date: datetime) -> l
     WHERE NOT (species_code = ANY(%s)) AND observation_date=%s AND type != 'P'
     GROUP BY observation_date, county_code, locality_id;
     """
-    seen_species = [s for s in life_list.keys() if life_list[s] < target_date]
+    truncated_life_list = {k: v for k, v in life_list.items() if v < target_date}
+    seen_species = [s for s in truncated_life_list.keys()]
     with open_connection() as conn:
         with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
             cur.execute(q, [seen_species,target_date])
@@ -78,5 +79,5 @@ def lookup_groundtruth_counties(life_list: LifeList, target_date: datetime) -> l
             gts[county] = []
         gts[county].append(Recommendation(location=row['locality_id'], score=row['c'], species=list(species_set)))
     
-    datapoints = [EndToEndEvalDatapoint(target_location=county, target_date=target_date, life_list=life_list, ground_truth=recs) for county, recs in gts.items()]
+    datapoints = [EndToEndEvalDatapoint(target_location=county, target_date=target_date, life_list=truncated_life_list, ground_truth=recs) for county, recs in gts.items()]
     return datapoints

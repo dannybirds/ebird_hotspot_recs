@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from data_handling import get_species_seen, parse_life_list_csv
 from ebird_db import create_life_lists, lookup_groundtruth_counties
-from common import LifeList, to_json_default
+from common import LifeList, from_json_object_hook, to_json_default
 from evals import EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, evaluate, run_end_to_end_evals
 from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommendations
 
@@ -59,17 +59,31 @@ def make_e2e_eval_data(args: argparse.Namespace) -> None:
     for k in tqdm(life_lists.values()):
         datapoints = lookup_groundtruth_counties(k, args.date)
         all_datapoints.extend(datapoints)
-    with open(args.eval_output_file, 'w') as f:
+    with open(args.eval_file, 'w') as f:
         json.dump(all_datapoints, f, default=to_json_default)
+
+
+def run_e2e_eval(args: argparse.Namespace) -> None:
+    with open(args.eval_file, 'r') as f:
+        data_json = json.load(f, object_hook=from_json_object_hook)
+    dataset = [EndToEndEvalDatapoint(**d) for d in data_json]
+    pprint.pp(dataset[0])
+    recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=7)
+    results = run_end_to_end_evals(recommender, dataset[0:2])
+    print("RESULTS")
+    pprint.pp(results)
+    print("AGGREGATED RESULTS")
+    pprint.pp(aggregate_end_to_end_eval_metrics(results))
+
 
 def main():
     parser = argparse.ArgumentParser(description="Main for testing things right now.")
-    parser.add_argument('--mode', type=str, help='Mode to run', choices=['recommend', 'make_e2e_eval_data'], default='recommend')
+    parser.add_argument('--mode', type=str, help='Mode to run', choices=['recommend', 'make_e2e_eval_data', 'run_e2e_eval'], default='recommend')
     parser.add_argument('--date', type=valid_date, help='Target date as yyyy-mm-dd', default=datetime.today())
     parser.add_argument('--location', type=str, help='EBird location ID')
     parser.add_argument('--life_list', type=str, help='CSV file path to life list')
     parser.add_argument('--eval_observer_ids', type=str, help='path to observer IDs to use for make_e2e_eval_data')
-    parser.add_argument('--eval_output_file', type=str, help='file to save make_e2e_eval_data to')
+    parser.add_argument('--eval_file', type=str, help='file to read or write e2e eval data from or to')
     args = parser.parse_args()
 
     # Configure logging to print everything to stdout
@@ -80,6 +94,8 @@ def main():
             make_recommendation(args)
         case 'make_e2e_eval_data':
             make_e2e_eval_data(args)
+        case 'run_e2e_eval':
+            run_e2e_eval(args)
         case _:
             logger.error(f"Unknown mode: {args.mode}")
             sys.exit(1)
