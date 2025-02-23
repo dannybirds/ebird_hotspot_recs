@@ -5,6 +5,8 @@ from datetime import datetime
 import pprint
 import sys
 
+from tqdm import tqdm
+
 from data_handling import get_species_seen, parse_life_list_csv
 from ebird_db import create_life_lists, lookup_groundtruth_counties
 from common import LifeList, to_json_default
@@ -50,17 +52,15 @@ def make_e2e_eval_data(args: argparse.Namespace) -> None:
     observer_ids = []
     with open(args.eval_observer_ids) as f:
         observer_ids = [line.strip() for line in f]
+    print(f"Loaded {len(observer_ids)} observer IDs.")
     life_lists: dict[str, LifeList] = create_life_lists(observer_ids)
-    for k in life_lists.values():
-        print("LIFE LIST:")
-        pprint.pp(k)
+    print(f"Fetched {len(life_lists)} life lists.")
+    all_datapoints: list[EndToEndEvalDatapoint] = []
+    for k in tqdm(life_lists.values()):
         datapoints = lookup_groundtruth_counties(k, args.date)
-        print("DATAPOINTS:")
-        pprint.pp(datapoints)
-        for d in datapoints:
-            print("DATAPOINT:")
-            pprint.pp(d)
-            pprint.pp(json.dumps(d, default=to_json_default))
+        all_datapoints.extend(datapoints)
+    with open(args.eval_output_file, 'w') as f:
+        json.dump(all_datapoints, f, default=to_json_default)
 
 def main():
     parser = argparse.ArgumentParser(description="Main for testing things right now.")
