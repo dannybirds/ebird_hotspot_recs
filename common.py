@@ -25,6 +25,7 @@ class EndToEndEvalDatapoint:
     target_date: datetime
     life_list: LifeList
     ground_truth: list[Recommendation]
+    observer_id: str = "unknown"
 
 def to_json_default(o: Any) -> Any:
     if isinstance(o, datetime):

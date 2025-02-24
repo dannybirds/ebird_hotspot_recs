@@ -13,6 +13,8 @@ def open_connection(autocommit: bool=False) -> psycopg.Connection:
 def create_life_lists(observer_ids: list[str]) -> dict[str, LifeList]:
     """
     Create life lists for a list of observers.
+
+    Rerturns a dictionary of observer IDs to life lists.
     """
 
     q = """
@@ -44,9 +46,11 @@ def create_life_lists(observer_ids: list[str]) -> dict[str, LifeList]:
         life_lists[observer_id][row['species_code']] = datetime.combine(first_seen, datetime.min.time())
     return life_lists
 
-def lookup_groundtruth_counties(life_list: LifeList, target_date: datetime) -> list[EndToEndEvalDatapoint]:
+def fetch_all_gt_hotspots(observer_id: str, life_list: LifeList, target_date: datetime) -> list[EndToEndEvalDatapoint]:
     """
-    Lookup the counties that have lifers on the target date, return a datapoint for each county.
+    Lookup the counties that have hotspots with lifers observed on the target date.
+    
+    Returns a datapoint for each hotspot in each county.
     """
     q = """
     SELECT
@@ -79,5 +83,11 @@ def lookup_groundtruth_counties(life_list: LifeList, target_date: datetime) -> l
             gts[county] = []
         gts[county].append(Recommendation(location=row['locality_id'], score=row['c'], species=list(species_set)))
     
-    datapoints = [EndToEndEvalDatapoint(target_location=county, target_date=target_date, life_list=truncated_life_list, ground_truth=recs) for county, recs in gts.items()]
+    datapoints = [
+        EndToEndEvalDatapoint(target_location=county,
+                              target_date=target_date,
+                              life_list=truncated_life_list,
+                              ground_truth=recs,
+                              observer_id=observer_id) for county, recs in gts.items()
+    ]
     return datapoints

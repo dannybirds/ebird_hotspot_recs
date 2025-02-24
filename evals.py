@@ -1,4 +1,6 @@
+import csv
 from dataclasses import dataclass
+from itertools import islice
 from common import EndToEndEvalDatapoint, Recommendation
 from recommenders import HotspotRecommender
 
@@ -80,3 +82,16 @@ def aggregate_end_to_end_eval_metrics(metrics: list[RecMetrics]) -> EndToEndAggr
         agg.false_negatives += m.false_negatives
     
     return agg
+
+
+def load_observer_ids(file: str, start_idx:int = 0, n:int|None = None) -> list[str]:
+    """
+    Load observer IDs from a file.
+    
+    The file must be a CSV with a column called 'observer_id' (other columns don't matter).
+    If given, start_idx and n are used to slice the file so that only the n ids starting at start_idx are returned.
+    """
+    with open(file, 'r') as f:
+        reader = csv.DictReader(f)
+        observer_ids = [row['observer_id'] for row in islice(reader, start_idx, start_idx + n if n else None)]
+    return observer_ids

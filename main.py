@@ -8,10 +8,11 @@ import sys
 from tqdm import tqdm
 
 from data_handling import get_species_seen, parse_life_list_csv
-from ebird_db import create_life_lists, lookup_groundtruth_counties
+from ebird_db import create_life_lists, fetch_all_gt_hotspots
 from common import LifeList, from_json_object_hook, to_json_default
-from evals import EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, evaluate, run_end_to_end_evals
+from evals import EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, evaluate, load_observer_ids, run_end_to_end_evals
 from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommendations
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -49,16 +50,15 @@ def make_recommendation(args: argparse.Namespace) -> None:
     pprint.pp(agg_metrics)
 
 def make_e2e_eval_data(args: argparse.Namespace) -> None:
-    observer_ids = []
-    with open(args.eval_observer_ids) as f:
-        observer_ids = [line.strip() for line in f]
+    observer_ids = load_observer_ids(args.eval_observer_ids, 0, 200)
     print(f"Loaded {len(observer_ids)} observer IDs.")
     life_lists: dict[str, LifeList] = create_life_lists(observer_ids)
     print(f"Fetched {len(life_lists)} life lists.")
     all_datapoints: list[EndToEndEvalDatapoint] = []
-    for k in tqdm(life_lists.values()):
-        datapoints = lookup_groundtruth_counties(k, args.date)
-        all_datapoints.extend(datapoints)
+    for observer_id, life_list in tqdm(life_lists.items()):
+        datapoints = fetch_all_gt_hotspots(observer_id, life_list, args.date)
+        if datapoints:
+            all_datapoints.append(random.choice(datapoints))
     with open(args.eval_file, 'w') as f:
         json.dump(all_datapoints, f, default=to_json_default)
 
@@ -69,7 +69,7 @@ def run_e2e_eval(args: argparse.Namespace) -> None:
     dataset = [EndToEndEvalDatapoint(**d) for d in data_json]
     pprint.pp(dataset[0])
     recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=7)
-    results = run_end_to_end_evals(recommender, dataset[0:2])
+    results = run_end_to_end_evals(recommender, dataset[0:100])
     print("RESULTS")
     pprint.pp(results)
     print("AGGREGATED RESULTS")
