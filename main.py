@@ -67,9 +67,9 @@ def run_e2e_eval(args: argparse.Namespace) -> None:
     with open(args.eval_file, 'r') as f:
         data_json = json.load(f, object_hook=from_json_object_hook)
     dataset = [EndToEndEvalDatapoint(**d) for d in data_json]
-    pprint.pp(dataset[0])
+    print(f"Loaded {len(dataset)} datapoints.")
     recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=7)
-    results = run_end_to_end_evals(recommender, dataset[0:100])
+    results = run_end_to_end_evals(recommender, dataset)
     print("RESULTS")
     pprint.pp(results)
     print("AGGREGATED RESULTS")
