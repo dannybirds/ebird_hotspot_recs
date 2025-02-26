@@ -1,3 +1,4 @@
+import calendar
 from datetime import datetime, timedelta
 
 import functools
@@ -19,6 +20,24 @@ def get_date_window(d: datetime, w: int) -> list[datetime]:
     if w < 0:
         raise ValueError(f"Window size w must be non-negative, got {w=}")
     return [d + timedelta(days=i) for i in range(-w, w + 1)]
+
+def get_all_dates_in_calendar_month_for_previous_years(d: datetime, num_years: int) -> list[datetime]:
+    """
+    Get a list of all dates in the calendar month of a given datetime for the previous num_years years.
+
+    Parameters:
+    d (datetime): The datetime for which to get all dates in the
+    calendar month.
+    num_years (int): The number of years to go back.
+    Returns:
+    list[datetime]: A list of all dates in the calendar month for the previous num_years years.
+    """
+    dates: list[datetime] = []
+    for year_delta in range(1, num_years + 1):
+        y = d.year - year_delta
+        _, n_days = calendar.monthrange(y, d.month)
+        dates.extend([datetime(y, d.month, day) for day in range(1, n_days+1)])
+    return dates
 
 def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightings:
     """
@@ -50,7 +69,7 @@ def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightin
                 species_seen[sp].add(species['locId'])
     return species_seen
 
-def get_historical_species_seen(location_id: str, target_date: datetime, num_years: int, day_window: int) -> Sightings:
+def get_historical_species_seen_in_window(location_id: str, target_date: datetime, num_years: int, day_window: int) -> Sightings:
     """
     Query species observed in an eBird location for day_window days around (target_date.month, target_date.day) for num_years before target_date.year.
 
@@ -68,6 +87,29 @@ def get_historical_species_seen(location_id: str, target_date: datetime, num_yea
     for d in dates:
         yearly_species_seen = get_species_seen(location_id, d, day_window)
         for sp, locs in yearly_species_seen.items():
+            if sp not in species_seen:
+                species_seen[sp] = set()
+            species_seen[sp].update(locs)
+    return species_seen
+
+def get_historical_species_seen_in_calendar_month(location_id: str, target_date: datetime, num_years: int) -> Sightings:
+    """
+    Query species observed in an eBird location for the month of target_date.month in num_years before target_date.year.
+
+    Parameters:
+    location_id (str): The eBird location identifier.
+    target_date (datetime): The target date around which to query in past years.
+    num_years (int): The number of years before target_date.year to query.
+
+    Returns:
+    dict[Species, set[str]]: A dictionary of species observed and the locations where they were seen.
+    """
+    dates = get_all_dates_in_calendar_month_for_previous_years(target_date, num_years)
+
+    species_seen: dict[Species, set[str]] = dict()
+    for d in dates:
+        monthly_species_seen = get_species_seen(location_id, d)
+        for sp, locs in monthly_species_seen.items():
             if sp not in species_seen:
                 species_seen[sp] = set()
             species_seen[sp].update(locs)

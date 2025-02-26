@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from data_handling import get_historical_species_seen
+from data_handling import get_historical_species_seen_in_window
 from common import LifeList, Species, Recommendation
 
 
@@ -17,7 +17,7 @@ def sightings_to_recommendations(sightings: dict[Species, set[str]]) -> list[Rec
             if loc not in locs_to_species:
                 locs_to_species[loc] = set()
             locs_to_species[loc].add(species)
-    recs = [Recommendation(location=loc, score=len(species), species=species) for loc, species in locs_to_species.items()]
+    recs = [Recommendation(location=loc, score=len(species), species=list(species)) for loc, species in locs_to_species.items()]
     return sorted(recs, key=lambda r: r.score, reverse=True)
 
 class HotspotRecommender(ABC):
@@ -32,8 +32,8 @@ class AnyHistoricalSightingRecommender(HotspotRecommender):
 
     def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         # read historical data for the target date
-        historical_sightings = get_historical_species_seen(location, target_date, num_years=self.historical_years, day_window=self.day_window)
+        historical_sightings = get_historical_species_seen_in_window(location, target_date, num_years=self.historical_years, day_window=self.day_window)
         # filter to unseen species
-        historical_sightings = {k: v for k, v in historical_sightings.items() if k not in life_list}
+        historical_sightings = {k: v for k, v in historical_sightings.items() if k.species_code not in life_list}
         return sightings_to_recommendations(historical_sightings)
     

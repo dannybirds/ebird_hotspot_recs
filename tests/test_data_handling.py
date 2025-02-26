@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from data_handling import get_date_window, get_historical_species_seen, get_species_seen, Species, parse_life_list_csv, sci_name_to_code_map
+from data_handling import get_all_dates_in_calendar_month_for_previous_years, get_date_window, get_historical_species_seen_in_window, get_species_seen, Species, parse_life_list_csv, sci_name_to_code_map
 from unittest.mock import MagicMock, patch, mock_open
 
 class TestDataHandling(unittest.TestCase):
@@ -105,7 +105,7 @@ class TestDataHandling(unittest.TestCase):
             Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'): {'L234567'},
             Species(common_name='American Robin', species_code='amerob', scientific_name='Turdus migratorius'): {'L345678'}
         }
-        result = get_historical_species_seen(location_id, target_date, num_years, day_window)
+        result = get_historical_species_seen_in_window(location_id, target_date, num_years, day_window)
         self.assertEqual(result, expected)
 
     @patch('data_handling.get_species_seen')
@@ -116,7 +116,7 @@ class TestDataHandling(unittest.TestCase):
         num_years = 3
         day_window = 1
         expected: dict[Species, set[str]] = dict()
-        result = get_historical_species_seen(location_id, target_date, num_years, day_window)
+        result = get_historical_species_seen_in_window(location_id, target_date, num_years, day_window)
         self.assertEqual(result, expected)
 
     @patch('ebird_api.get_taxonomy')
@@ -168,6 +168,57 @@ class TestDataHandling(unittest.TestCase):
         }
         with self.assertRaises(ValueError):
             parse_life_list_csv('fake_path.csv')
+
+
+    def test_get_all_dates_in_calendar_month_for_previous_years(self):
+        d = datetime(2023, 10, 1)
+        num_years = 2
+        expected = [datetime(2022, 10, i) for i in range(1, 32)]
+        expected.extend([datetime(2021, 10, i) for i in range(1, 32)])
+        result = get_all_dates_in_calendar_month_for_previous_years(d, num_years)
+        self.assertEqual(result, expected)
+
+    def test_get_all_dates_in_calendar_month_for_previous_years_leap_year(self):
+        d = datetime(2023, 2, 28)
+        num_years = 4
+        expected = [
+            datetime(2022, 2, 1), datetime(2022, 2, 2), datetime(2022, 2, 3), datetime(2022, 2, 4), datetime(2022, 2, 5),
+            datetime(2022, 2, 6), datetime(2022, 2, 7), datetime(2022, 2, 8), datetime(2022, 2, 9), datetime(2022, 2, 10),
+            datetime(2022, 2, 11), datetime(2022, 2, 12), datetime(2022, 2, 13), datetime(2022, 2, 14), datetime(2022, 2, 15),
+            datetime(2022, 2, 16), datetime(2022, 2, 17), datetime(2022, 2, 18), datetime(2022, 2, 19), datetime(2022, 2, 20),
+            datetime(2022, 2, 21), datetime(2022, 2, 22), datetime(2022, 2, 23), datetime(2022, 2, 24), datetime(2022, 2, 25),
+            datetime(2022, 2, 26), datetime(2022, 2, 27), datetime(2022, 2, 28),
+
+            datetime(2021, 2, 1), datetime(2021, 2, 2), datetime(2021, 2, 3), datetime(2021, 2, 4), datetime(2021, 2, 5),
+            datetime(2021, 2, 6), datetime(2021, 2, 7), datetime(2021, 2, 8), datetime(2021, 2, 9), datetime(2021, 2, 10),
+            datetime(2021, 2, 11), datetime(2021, 2, 12), datetime(2021, 2, 13), datetime(2021, 2, 14), datetime(2021, 2, 15),
+            datetime(2021, 2, 16), datetime(2021, 2, 17), datetime(2021, 2, 18), datetime(2021, 2, 19), datetime(2021, 2, 20),
+            datetime(2021, 2, 21), datetime(2021, 2, 22), datetime(2021, 2, 23), datetime(2021, 2, 24), datetime(2021, 2, 25),
+            datetime(2021, 2, 26), datetime(2021, 2, 27), datetime(2021, 2, 28),
+
+            datetime(2020, 2, 1), datetime(2020, 2, 2), datetime(2020, 2, 3), datetime(2020, 2, 4), datetime(2020, 2, 5),
+            datetime(2020, 2, 6), datetime(2020, 2, 7), datetime(2020, 2, 8), datetime(2020, 2, 9), datetime(2020, 2, 10),
+            datetime(2020, 2, 11), datetime(2020, 2, 12), datetime(2020, 2, 13), datetime(2020, 2, 14), datetime(2020, 2, 15),
+            datetime(2020, 2, 16), datetime(2020, 2, 17), datetime(2020, 2, 18), datetime(2020, 2, 19), datetime(2020, 2, 20),
+            datetime(2020, 2, 21), datetime(2020, 2, 22), datetime(2020, 2, 23), datetime(2020, 2, 24), datetime(2020, 2, 25),
+            datetime(2020, 2, 26), datetime(2020, 2, 27), datetime(2020, 2, 28), datetime(2020, 2, 29),
+
+            datetime(2019, 2, 1), datetime(2019, 2, 2), datetime(2019, 2, 3), datetime(2019, 2, 4), datetime(2019, 2, 5),
+            datetime(2019, 2, 6), datetime(2019, 2, 7), datetime(2019, 2, 8), datetime(2019, 2, 9), datetime(2019, 2, 10),
+            datetime(2019, 2, 11), datetime(2019, 2, 12), datetime(2019, 2, 13), datetime(2019, 2, 14), datetime(2019, 2, 15),
+            datetime(2019, 2, 16), datetime(2019, 2, 17), datetime(2019, 2, 18), datetime(2019, 2, 19), datetime(2019, 2, 20),
+            datetime(2019, 2, 21), datetime(2019, 2, 22), datetime(2019, 2, 23), datetime(2019, 2, 24), datetime(2019, 2, 25),
+            datetime(2019, 2, 26), datetime(2019, 2, 27), datetime(2019, 2, 28)
+        ]
+        result = get_all_dates_in_calendar_month_for_previous_years(d, num_years)
+        self.assertEqual(result, expected)
+
+    def test_get_all_dates_in_calendar_month_for_previous_years_no_years(self):
+        d = datetime(2023, 10, 1)
+        num_years = 0
+        expected = []
+        result = get_all_dates_in_calendar_month_for_previous_years(d, num_years)
+        self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':
