@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from data_handling import get_historical_species_seen_in_window
+from data_handling import get_historical_species_seen_in_calendar_month, get_historical_species_seen_in_window
 from common import LifeList, Species, Recommendation
 
 
@@ -36,4 +36,16 @@ class AnyHistoricalSightingRecommender(HotspotRecommender):
         # filter to unseen species
         historical_sightings = {k: v for k, v in historical_sightings.items() if k.species_code not in life_list}
         return sightings_to_recommendations(historical_sightings)
+    
+
+class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
+    def __init__(self, historical_years: int=3):
+        self.historical_years = historical_years
+
+    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+        # read historical data for the target date
+        historical_sightings = get_historical_species_seen_in_calendar_month(location, target_date, num_years=self.historical_years)
+        # filter to unseen species
+        historical_sightings = {k: v for k, v in historical_sightings.items() if k.species_code not in life_list}
+        return sightings_to_recommendations(historical_sightings)    
     

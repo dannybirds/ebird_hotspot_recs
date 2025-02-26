@@ -11,7 +11,7 @@ from data_handling import get_species_seen, parse_life_list_csv
 from ebird_db import create_life_lists, fetch_all_gt_hotspots
 from common import LifeList, from_json_object_hook, to_json_default
 from evals import EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, evaluate, load_observer_ids, run_end_to_end_evals
-from recommenders import AnyHistoricalSightingRecommender, sightings_to_recommendations
+from recommenders import AnyHistoricalSightingRecommender, CalendarMonthHistoricalSightingRecommender, sightings_to_recommendations
 import random
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,8 @@ def run_e2e_eval(args: argparse.Namespace) -> None:
         data_json = json.load(f, object_hook=from_json_object_hook)
     dataset = [EndToEndEvalDatapoint(**d) for d in data_json]
     print(f"Loaded {len(dataset)} datapoints.")
-    recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=7)
+    recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=14)
+    # recommender = CalendarMonthHistoricalSightingRecommender(historical_years=5)
     results = run_end_to_end_evals(recommender, dataset)
     print("RESULTS")
     pprint.pp(results)

@@ -1,6 +1,8 @@
 import csv
 from dataclasses import dataclass
 from itertools import islice
+
+from tqdm import tqdm
 from common import EndToEndEvalDatapoint, Recommendation
 from recommenders import HotspotRecommender
 
@@ -64,7 +66,7 @@ def run_end_to_end_evals(recommender: HotspotRecommender, dataset: list[EndToEnd
             recommender.recommend(datapoint.target_location, datapoint.target_date, datapoint.life_list),
             datapoint.ground_truth
         ) 
-        for datapoint in dataset
+        for datapoint in tqdm(dataset)
     ]
 
 def aggregate_end_to_end_eval_metrics(metrics: list[RecMetrics]) -> EndToEndAggregateMetrics:
