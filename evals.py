@@ -25,7 +25,7 @@ class EndToEndAggregateMetrics:
     false_positives: float = 0
     false_negatives: float = 0
 
-def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation]) -> RecMetrics:
+def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation], k:int|None=None) -> RecMetrics:
     """
     Evaluate the recommendations against the ground truth.
 
@@ -40,6 +40,9 @@ def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation]) -> 
     gt_dict = {r.location: r for r in ground_truth}
     hits: set[str] = set()
     metrics: RecMetrics = RecMetrics()
+    recs.sort(key=lambda r: r.score, reverse=True)
+    if k:
+        recs = recs[:k]
     for rec in recs:
         if rec.location in gt_dict:
             hits.add(rec.location)
@@ -57,14 +60,15 @@ def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation]) -> 
     return metrics
 
 
-def run_end_to_end_evals(recommender: HotspotRecommender, dataset: list[EndToEndEvalDatapoint]) -> list[RecMetrics]:
+def run_end_to_end_evals(recommender: HotspotRecommender, dataset: list[EndToEndEvalDatapoint], k:int|None = None) -> list[RecMetrics]:
     """
     Run end-to-end evaluations on a dataset.
     """
     return [
         evaluate(
             recommender.recommend(datapoint.target_location, datapoint.target_date, datapoint.life_list),
-            datapoint.ground_truth
+            datapoint.ground_truth,
+            k=k
         ) 
         for datapoint in tqdm(dataset)
     ]
