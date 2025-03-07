@@ -1,2 +1,4 @@
 __pycache__/
 *.py[cod]
+sitta.egg-info/
+.gitignore
