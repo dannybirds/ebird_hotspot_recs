@@ -1,3 +1,7 @@
+"""
+Interface with the eBird API to retrieve observation data.
+"""
+
 from datetime import datetime
 import hashlib
 import os
@@ -28,13 +32,15 @@ def get_api_key_or_fail() -> str:
         raise Exception("EBIRD_API_KEY environment variable not set")
     return api_key
 
+
 def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str] | None = None, cache_dir: str = DEFAULT_CACHE_DIR) -> Any:
     """
     Get a cached response for a given URL, params, and headers; or fetch and cache the response if not cached.
 
     Parameters:
-    headers (dict[str, str]): The headers to include in the request.
+    url (str): The URL to fetch.
     params (dict[str, str]): The parameters to include in the request.
+    headers (dict[str, str] | None): The headers to include in the request.
     cache_dir (str): The directory to cache responses in.
 
     Raises:
@@ -98,12 +104,10 @@ def get_observations_on_date(location_id: str, date: datetime, max_results: int=
 
     return get_cache_or_fetch(url, params)
 
+
 def get_taxonomy() -> Any:
     """
     Query the eBird taxonomy.
-
-    Parameters:
-    api_key (str): eBird API key.
 
     Returns:
     list: A list of species in the eBird taxonomy.

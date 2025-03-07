@@ -1,3 +1,6 @@
+"""
+Common data models and types used throughout the Sitta package.
+"""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -6,28 +9,53 @@ from typing import Any
 
 @dataclass(frozen=True)
 class Species:
+    """
+    Represents a bird species with its common name, species code, and scientific name.
+    """
     common_name: str
     species_code: str
     scientific_name: str
 
+
+# Type aliases for improved code readability
 type LifeList = dict[str, datetime]
 type Sightings = dict[Species, set[str]]
 
+
 @dataclass(frozen=True)
 class Recommendation:
+    """
+    Represents a recommendation for a birding location with associated species.
+    
+    score should be interpretable as the expected number of species from the list that can be seen at the location.
+    """
     location: str
     score: float
     species: list[Species]
 
+
 @dataclass
 class EndToEndEvalDatapoint:
+    """
+    Datapoint for end-to-end evaluation of recommender systems.
+    """
     target_location: str
     target_date: datetime
     life_list: LifeList
     ground_truth: list[Recommendation]
     observer_id: str = "unknown"
 
+
 def to_json_default(o: Any) -> Any:
+    """
+    Custom JSON serializer for Sitta types.
+    
+    Parameters:
+    o (Any): Object to serialize
+    
+    Returns:
+    Any: JSON-serializable representation
+    """
     if isinstance(o, datetime):
         return {'__datetime__': True, 'value': o.isoformat()}
     elif isinstance(o, Recommendation):
@@ -41,7 +69,17 @@ def to_json_default(o: Any) -> Any:
     else:
         return o.__dict__
     
+
 def from_json_object_hook(d: dict[str, Any]) -> Any:
+    """
+    Custom JSON deserializer for Sitta types.
+    
+    Parameters:
+    d (dict): Dictionary to deserialize
+    
+    Returns:
+    Any: Deserialized object
+    """
     if '__datetime__' in d:
         return datetime.fromisoformat(d['value'])
     if '__recommendation__' in d:

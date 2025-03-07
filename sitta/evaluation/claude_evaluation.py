@@ -8,12 +8,13 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from common import from_json_object_hook
-from evals import EndToEndAggregateMetrics, EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, run_end_to_end_evals
-from recommenders import AnyHistoricalSightingRecommender, CalendarMonthHistoricalSightingRecommender, HotspotRecommender
+from sitta.common.models import from_json_object_hook
+from sitta.evaluation.metrics import EndToEndAggregateMetrics, EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, run_end_to_end_evals
+from sitta.recommenders.base import HotspotRecommender
+from sitta.recommenders.heuristic import AnyHistoricalSightingRecommender, CalendarMonthHistoricalSightingRecommender
 
 # Import Claude recommender classes
-from claude_recommender import ClaudeRecommender, HybridRecommender
+from sitta.recommenders.llm import ClaudeRecommender
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +45,6 @@ def compare_recommenders(args: argparse.Namespace) -> None:
     if claude_api_key:
         recommenders.update({
             "Claude": ClaudeRecommender(api_key=claude_api_key, historical_years=5, day_window=7),
-            "Hybrid": HybridRecommender(
-                historical_years=5, 
-                day_window=7,
-                claude_api_key=claude_api_key
-            )
         })
     else:
         print("ANTHROPIC_API_KEY not found. Skipping Claude-based recommenders.")
@@ -153,9 +149,6 @@ def compare_recommenders(args: argparse.Namespace) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate and compare recommender algorithms.")
-    parser.add_argument('--mode', type=str, help='Mode to run', 
-                        choices=['recommend', 'make_e2e_eval_data', 'run_e2e_eval', 'compare_recommenders'], 
-                        default='compare_recommenders')
     parser.add_argument('--date', type=lambda s: datetime.strptime(s, "%Y-%m-%d") if s else datetime.today(), 
                         help='Target date as yyyy-mm-dd', default=None)
     parser.add_argument('--location', type=str, help='EBird location ID')
@@ -173,13 +166,7 @@ def main():
     # Configure logging to print everything to stdout
     logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
-    match args.mode:
-        case 'compare_recommenders':
-            compare_recommenders(args)
-        case _:
-            # Call the original main function for other modes
-            from main import main as original_main
-            original_main()
+    compare_recommenders(args)
 
 if __name__ == "__main__":
     main()

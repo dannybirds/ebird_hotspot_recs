@@ -1,10 +1,15 @@
+"""
+Utilities for handling eBird data and life lists.
+"""
+
 import calendar
 from datetime import datetime, timedelta
-
 import functools
+import csv
 
-from ebird_api import get_observations_on_date
-from common import LifeList, Sightings, Species
+from sitta.common.models import LifeList, Sightings, Species
+from sitta.data.ebird_api import get_observations_on_date, get_taxonomy
+
 
 def get_date_window(d: datetime, w: int) -> list[datetime]:
     """
@@ -12,7 +17,7 @@ def get_date_window(d: datetime, w: int) -> list[datetime]:
 
     Parameters:
     d (datetime): The central datetime.
-    W (int): The window size in days.
+    w (int): The window size in days.
 
     Returns:
     list[datetime]: A list of datetimes within the window size around the given datetime.
@@ -21,14 +26,15 @@ def get_date_window(d: datetime, w: int) -> list[datetime]:
         raise ValueError(f"Window size w must be non-negative, got {w=}")
     return [d + timedelta(days=i) for i in range(-w, w + 1)]
 
+
 def get_all_dates_in_calendar_month_for_previous_years(d: datetime, num_years: int) -> list[datetime]:
     """
     Get a list of all dates in the calendar month of a given datetime for the previous num_years years.
 
     Parameters:
-    d (datetime): The datetime for which to get all dates in the
-    calendar month.
+    d (datetime): The datetime for which to get all dates in the calendar month.
     num_years (int): The number of years to go back.
+    
     Returns:
     list[datetime]: A list of all dates in the calendar month for the previous num_years years.
     """
@@ -38,6 +44,7 @@ def get_all_dates_in_calendar_month_for_previous_years(d: datetime, num_years: i
         _, n_days = calendar.monthrange(y, d.month)
         dates.extend([datetime(y, d.month, day) for day in range(1, n_days+1)])
     return dates
+
 
 def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightings:
     """
@@ -69,6 +76,7 @@ def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightin
                 species_seen[sp].add(species['locId'])
     return species_seen
 
+
 def get_historical_species_seen_in_window(location_id: str, target_date: datetime, num_years: int, day_window: int) -> Sightings:
     """
     Query species observed in an eBird location for day_window days around (target_date.month, target_date.day) for num_years before target_date.year.
@@ -91,6 +99,7 @@ def get_historical_species_seen_in_window(location_id: str, target_date: datetim
                 species_seen[sp] = set()
             species_seen[sp].update(locs)
     return species_seen
+
 
 def get_historical_species_seen_in_calendar_month(location_id: str, target_date: datetime, num_years: int) -> Sightings:
     """
@@ -115,6 +124,7 @@ def get_historical_species_seen_in_calendar_month(location_id: str, target_date:
             species_seen[sp].update(locs)
     return species_seen
 
+
 @functools.cache
 def sci_name_to_code_map() -> dict[str, str]:
     """
@@ -125,7 +135,6 @@ def sci_name_to_code_map() -> dict[str, str]:
     Returns:
     dict[str, str]: A dictionary mapping scientific names to species codes.
     """
-    from ebird_api import get_taxonomy
     taxonomy = get_taxonomy()
     return {species['sciName']: species['speciesCode'] for species in taxonomy}
 
@@ -138,9 +147,8 @@ def parse_life_list_csv(life_list_csv_path: str) -> LifeList:
     life_list_csv_path (str): The path to the life list CSV file.
 
     Returns:
-    dict[Species, datetime]: A dictionary of species code and the date they were first seen.
+    dict[str, datetime]: A dictionary of species code and the date they were first seen.
     """
-    import csv
     species_dates: LifeList = dict()
     with open(life_list_csv_path, 'r') as f:
         reader = csv.DictReader(f)
@@ -148,6 +156,3 @@ def parse_life_list_csv(life_list_csv_path: str) -> LifeList:
             s = sci_name_to_code_map()[row['Scientific Name']]
             species_dates[s] = datetime.strptime(row['Date'], "%d %b %Y")
     return species_dates
-
-
-    

@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import ANY, patch, mock_open, MagicMock
 import json
 
-from ebird_api import get_cache_or_fetch
+from sitta.data.ebird_api import get_cache_or_fetch
 
 class TestEbirdApi(unittest.TestCase):
 
@@ -13,9 +13,9 @@ class TestEbirdApi(unittest.TestCase):
         if False:
             logging.basicConfig(level=logging.DEBUG)
 
-    @patch("ebird_api.urllib.request.urlopen")
-    @patch("ebird_api.os.path.exists")
-    @patch("ebird_api.open", new_callable=mock_open)
+    @patch("sitta.data.ebird_api.urllib.request.urlopen")
+    @patch("sitta.data.ebird_api.os.path.exists")
+    @patch("sitta.data.ebird_api.open", new_callable=mock_open)
     def test_get_cache_or_fetch_cache_hit(self, mock_open: MagicMock, mock_exists: MagicMock, mock_urlopen: MagicMock):
         mock_cache_dir = "mock_cache_dir"
         has_mock_cache_dir : Callable[[str], bool] = lambda path: mock_cache_dir in path
@@ -37,11 +37,11 @@ class TestEbirdApi(unittest.TestCase):
         # urlopen should not be called
         mock_urlopen.assert_not_called()
 
-    @patch("ebird_api.json.dump")
-    @patch("ebird_api.urllib.request.urlopen")
-    @patch("ebird_api.os.path.exists")
-    @patch("ebird_api.os.makedirs")
-    @patch("ebird_api.open", new_callable=mock_open)
+    @patch("sitta.data.ebird_api.json.dump")
+    @patch("sitta.data.ebird_api.urllib.request.urlopen")
+    @patch("sitta.data.ebird_api.os.path.exists")
+    @patch("sitta.data.ebird_api.os.makedirs")
+    @patch("sitta.data.ebird_api.open", new_callable=mock_open)
     def test_get_cache_or_fetch_cache_miss(self, mock_open: MagicMock, mock_makedirs: MagicMock, mock_exists: MagicMock, mock_urlopen: MagicMock, mock_json_dump: MagicMock):
         mock_cache_dir = "mock_cache_dir" 
         mock_response_data = {"data": "fetched_data"}

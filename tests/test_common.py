@@ -1,9 +1,8 @@
 import json
-import pprint
 from typing import Any
 import unittest
 from datetime import datetime
-from common import Recommendation, Species, from_json_object_hook, to_json_default, EndToEndEvalDatapoint
+from sitta.common.models import Recommendation, Species, from_json_object_hook, to_json_default, EndToEndEvalDatapoint
 
 class TestCommon(unittest.TestCase):
     def test_datetime_serialization(self):

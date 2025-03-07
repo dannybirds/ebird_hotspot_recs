@@ -1,51 +1,99 @@
-from abc import ABC, abstractmethod
+"""
+Heuristic-based recommender implementations.
+"""
+
 from datetime import datetime
 
-from data_handling import get_historical_species_seen_in_calendar_month, get_historical_species_seen_in_window
-from common import LifeList, Species, Recommendation
+from sitta.common.models import LifeList, Recommendation
+from sitta.data.data_handling import (
+    get_historical_species_seen_in_window,
+    get_historical_species_seen_in_calendar_month
+)
+from sitta.recommenders.base import HotspotRecommender, sightings_to_recommendations
 
-
-def sightings_to_recommendations(sightings: dict[Species, set[str]]) -> list[Recommendation]:
-    """
-    Convert a dictionary of species to locations to a list of recommendations. The score is the number of species seen at the location.
-    
-    Useful for turning ground truth sightings into recommendations that have the correct number of species seen.
-    """
-    locs_to_species: dict[str, set[Species]] = dict()
-    for species, locs in sightings.items():
-        for loc in locs:
-            if loc not in locs_to_species:
-                locs_to_species[loc] = set()
-            locs_to_species[loc].add(species)
-    recs = [Recommendation(location=loc, score=len(species), species=list(species)) for loc, species in locs_to_species.items()]
-    return sorted(recs, key=lambda r: r.score, reverse=True)
-
-class HotspotRecommender(ABC):
-    @abstractmethod
-    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
-        pass
 
 class AnyHistoricalSightingRecommender(HotspotRecommender):
+    """
+    Recommender that uses historical sightings from specific days in previous years.
+    
+    This recommender looks at the same date (+/- a window) in previous years 
+    to find species that were recorded at the location.
+    """
+    
     def __init__(self, historical_years: int=3, day_window: int=1):
+        """
+        Initialize the recommender.
+        
+        Parameters:
+        historical_years (int): Number of previous years to look at.
+        day_window (int): Number of days before and after the target date to include.
+        """
         self.historical_years = historical_years
         self.day_window = day_window
 
     def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
-        # read historical data for the target date
-        historical_sightings = get_historical_species_seen_in_window(location, target_date, num_years=self.historical_years, day_window=self.day_window)
-        # filter to unseen species
+        """
+        Generate recommendations based on historical sightings.
+        
+        Parameters:
+        location (str): The eBird location ID.
+        target_date (datetime): The target date.
+        life_list (LifeList): The user's life list.
+        
+        Returns:
+        list[Recommendation]: List of recommendations.
+        """
+        # Read historical data for the target date
+        historical_sightings = get_historical_species_seen_in_window(
+            location,
+            target_date,
+            num_years=self.historical_years,
+            day_window=self.day_window
+        )
+        
+        # Filter to unseen species
         historical_sightings = {k: v for k, v in historical_sightings.items() if k.species_code not in life_list}
+        
         return sightings_to_recommendations(historical_sightings)
     
 
 class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
+    """
+    Recommender that uses historical sightings from the same calendar month in previous years.
+    
+    This recommender looks at the same month in previous years to find 
+    species that were recorded at the location, providing broader historical context.
+    """
+    
     def __init__(self, historical_years: int=3):
+        """
+        Initialize the recommender.
+        
+        Parameters:
+        historical_years (int): Number of previous years to look at.
+        """
         self.historical_years = historical_years
 
     def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
-        # read historical data for the target date
-        historical_sightings = get_historical_species_seen_in_calendar_month(location, target_date, num_years=self.historical_years)
-        # filter to unseen species
+        """
+        Generate recommendations based on historical month sightings.
+        
+        Parameters:
+        location (str): The eBird location ID.
+        target_date (datetime): The target date.
+        life_list (LifeList): The user's life list.
+        
+        Returns:
+        list[Recommendation]: List of recommendations.
+        """
+        # Read historical data for the target month
+        historical_sightings = get_historical_species_seen_in_calendar_month(
+            location,
+            target_date,
+            num_years=self.historical_years
+        )
+        
+        # Filter to unseen species
         historical_sightings = {k: v for k, v in historical_sightings.items() if k.species_code not in life_list}
-        return sightings_to_recommendations(historical_sightings)    
-    
+        
+        return sightings_to_recommendations(historical_sightings)

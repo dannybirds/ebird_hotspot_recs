@@ -1,11 +1,12 @@
 import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
-from recommenders import AnyHistoricalSightingRecommender, Recommendation, sightings_to_recommendations
-from data_handling import Species
+from sitta.recommenders.base import sightings_to_recommendations
+from sitta.recommenders.heuristic import AnyHistoricalSightingRecommender, Recommendation, sightings_to_recommendations
+from sitta.data.data_handling import Species
 
 class TestRecommenders(unittest.TestCase):
-    @patch('recommenders.get_historical_species_seen_in_window')
+    @patch('sitta.recommenders.heuristic.get_historical_species_seen_in_window')
     def test_any_historical_sighting_recommender(self, mock_get_historical_species_seen_in_window: MagicMock):
         location = "Test Location"
         target_date = datetime(2023, 10, 1)
