@@ -7,10 +7,9 @@ import psycopg
 from datetime import datetime
 import psycopg.rows
 
-from sitta.common.models import EndToEndEvalDatapoint, LifeList, Recommendation
+from sitta.common.base import EndToEndEvalDatapoint, LifeList, Recommendation
 
 DB_NAME = "ebird_us"
-
 
 def open_connection(autocommit: bool=False) -> psycopg.Connection:
     """
@@ -23,6 +22,22 @@ def open_connection(autocommit: bool=False) -> psycopg.Connection:
     psycopg.Connection: A connection to the eBird database.
     """
     conn = psycopg.connect(
+        f"dbname={DB_NAME} user={os.getenv('POSTGRES_USER')} password={os.getenv('POSTGRES_PWD')}", 
+        autocommit=autocommit
+    )
+    return conn
+
+async def open_async_connection(autocommit: bool=False) -> psycopg.AsyncConnection:
+    """
+    Open a connection to the eBird database.
+    
+    Parameters:
+    autocommit (bool): Whether to enable autocommit mode.
+    
+    Returns:
+    psycopg.Connection: A connection to the eBird database.
+    """
+    conn = await psycopg.AsyncConnection.connect(
         f"dbname={DB_NAME} user={os.getenv('POSTGRES_USER')} password={os.getenv('POSTGRES_PWD')}", 
         autocommit=autocommit
     )
@@ -69,7 +84,7 @@ def create_life_lists(observer_ids: list[str]) -> dict[str, LifeList]:
     return life_lists
 
 
-def fetch_all_gt_hotspots(observer_id: str, life_list: LifeList, target_date: datetime) -> list[EndToEndEvalDatapoint]:
+async def fetch_all_gt_hotspots(observer_id: str, life_list: LifeList, target_date: datetime) -> list[EndToEndEvalDatapoint]:
     """
     Lookup the counties that have hotspots with lifers observed on the target date.
     
@@ -94,10 +109,10 @@ def fetch_all_gt_hotspots(observer_id: str, life_list: LifeList, target_date: da
     """
     truncated_life_list = {k: v for k, v in life_list.items() if v < target_date}
     seen_species = [s for s in truncated_life_list.keys()]
-    with open_connection() as conn:
-        with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
-            cur.execute(q, [seen_species, target_date])
-            rows = cur.fetchall()
+    async with await open_async_connection() as conn:
+        async with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
+            await cur.execute(q, [seen_species, target_date])
+            rows = await cur.fetchall()
 
     gts: dict[str, list[Recommendation]] = {}
     for row in rows:

@@ -5,6 +5,7 @@ Interface with the eBird API to retrieve observation data.
 from datetime import datetime
 import hashlib
 import os
+import aiofiles
 from typing import Any
 import urllib.request
 import urllib.parse
@@ -33,7 +34,7 @@ def get_api_key_or_fail() -> str:
     return api_key
 
 
-def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str] | None = None, cache_dir: str = DEFAULT_CACHE_DIR) -> Any:
+async def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str] | None = None, cache_dir: str = DEFAULT_CACHE_DIR) -> Any:
     """
     Get a cached response for a given URL, params, and headers; or fetch and cache the response if not cached.
 
@@ -65,8 +66,9 @@ def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str]
     
     if os.path.exists(cache_path):
         logger.debug(f"Cache hit: {cache_path}")
-        with open(cache_path, 'r') as cache_file:
-            return json.load(cache_file)
+        async with aiofiles.open(cache_path, 'r') as cache_file:
+            s = await cache_file.read()
+            return json.loads(s)
     
     logger.debug(f"Cache miss: {cache_path}")
     req = urllib.request.Request(url, headers=headers)
@@ -83,7 +85,7 @@ def get_cache_or_fetch(url: str, params: dict[str, str], headers: dict[str, str]
             raise Exception(f"Error: {response.status}")
 
 
-def get_observations_on_date(location_id: str, date: datetime, max_results: int=DEFAULT_MAX_RESULTS) -> list[dict[str,Any]]:
+async def get_observations_on_date(location_id: str, date: datetime, max_results: int=DEFAULT_MAX_RESULTS) -> list[dict[str,Any]]:
     """
     Query species observed in an eBird location on a given day.
 
@@ -102,7 +104,7 @@ def get_observations_on_date(location_id: str, date: datetime, max_results: int=
         "detail": "full"
     }
 
-    return get_cache_or_fetch(url, params)
+    return await get_cache_or_fetch(url, params)
 
 
 def get_taxonomy() -> Any:

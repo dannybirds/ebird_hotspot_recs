@@ -3,6 +3,7 @@ Command-line interface for the Sitta package.
 """
 
 import argparse
+import asyncio
 import json
 import logging
 import pprint
@@ -12,9 +13,10 @@ from datetime import datetime
 
 from tqdm import tqdm
 
+from sitta.common.base import valid_date
 from sitta.data.data_handling import parse_life_list_csv, get_species_seen
-from sitta.data.ebird_db import fetch_all_gt_hotspots, create_life_lists
-from sitta.common.models import EndToEndEvalDatapoint, from_json_object_hook, to_json_default
+from sitta.data.ebird_db import create_life_lists, fetch_all_gt_hotspots
+from sitta.common.base import EndToEndEvalDatapoint, from_json_object_hook, to_json_default
 from sitta.evaluation.metrics import (
     run_end_to_end_evals,
     aggregate_end_to_end_eval_metrics,
@@ -30,24 +32,7 @@ from sitta.recommenders.heuristic import (
 logger = logging.getLogger(__name__)
 
 
-def valid_date(s: str) -> datetime:
-    """
-    Parse a date string in YYYY-MM-DD format.
-    
-    Parameters:
-    s (str): Date string.
-    
-    Returns:
-    datetime: Parsed date.
-    """
-    try:
-        return datetime.strptime(s, "%Y-%m-%d")
-    except ValueError:
-        logger.warning(f"Not a valid date: '{s}'.")
-        return datetime.today()
-
-
-def make_recommendation(args: argparse.Namespace) -> None:
+async def make_recommendation(args: argparse.Namespace) -> None:
     """
     Generate and evaluate recommendations for a given location, date, and life list.
     
@@ -59,15 +44,16 @@ def make_recommendation(args: argparse.Namespace) -> None:
 
     # Create and run recommender
     recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=7)
-    recs = recommender.recommend(args.location, args.date, life_list)
+    recs = await recommender.recommend(args.location, args.date, life_list)
     
     print("RECOMMENDATIONS\n")
     pprint.pp(recs)
     print("\n")
 
     # Get actual sightings on the target date, filtered to only include species not in the life list
+    sightings = await get_species_seen(args.location, args.date, window=0)
     ground_truth_sightings = {
-        k: v for k, v in get_species_seen(args.location, args.date, window=0).items() 
+        k: v for k, v in sightings.items() 
         if k.species_code not in life_list
     }    
     
@@ -88,20 +74,20 @@ def make_recommendation(args: argparse.Namespace) -> None:
         )
     ]
     
-    agg_metrics = aggregate_end_to_end_eval_metrics(run_end_to_end_evals(recommender, dataset))
+    agg_metrics = aggregate_end_to_end_eval_metrics(await run_end_to_end_evals(recommender, dataset))
 
     print("AGGREGATE METRICS")
     pprint.pp(agg_metrics)
 
 
-def make_e2e_eval_data(args: argparse.Namespace) -> None:
+async def make_e2e_eval_data(args: argparse.Namespace) -> None:
     """
     Create end-to-end evaluation data.
     
     Parameters:
     args (argparse.Namespace): Command-line arguments.
     """
-    observer_ids = load_observer_ids(args.eval_observer_ids, 0, 200)
+    observer_ids = load_observer_ids(args.eval_observer_ids, 0, 10) # 200)
     print(f"Loaded {len(observer_ids)} observer IDs.")
     
     life_lists = create_life_lists(observer_ids)
@@ -109,7 +95,7 @@ def make_e2e_eval_data(args: argparse.Namespace) -> None:
     
     all_datapoints: list[EndToEndEvalDatapoint] = []
     for observer_id, life_list in tqdm(life_lists.items()):
-        datapoints = fetch_all_gt_hotspots(observer_id, life_list, args.date)
+        datapoints = await fetch_all_gt_hotspots(observer_id, life_list, args.date)
         if datapoints:
             all_datapoints.append(random.choice(datapoints))
     
@@ -117,7 +103,7 @@ def make_e2e_eval_data(args: argparse.Namespace) -> None:
         json.dump(all_datapoints, f, default=to_json_default)
 
 
-def run_e2e_eval(args: argparse.Namespace) -> None:
+async def run_e2e_eval(args: argparse.Namespace) -> None:
     """
     Run end-to-end evaluation.
     
@@ -135,7 +121,7 @@ def run_e2e_eval(args: argparse.Namespace) -> None:
     recommender = CalendarMonthHistoricalSightingRecommender(historical_years=5)
     
     # Run evaluation
-    results = run_end_to_end_evals(recommender, dataset, k=1)
+    results = await run_end_to_end_evals(recommender, dataset, k=1)
     
     print("RESULTS")
     pprint.pp(results)
@@ -186,18 +172,18 @@ def main():
 
     # Configure logging to print everything to stdout
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         handlers=[logging.StreamHandler(sys.stdout)]
     )
 
     # Run selected mode
     match args.mode:
         case 'recommend':
-            make_recommendation(args)
+            asyncio.run(make_recommendation(args))
         case 'make_e2e_eval_data':
-            make_e2e_eval_data(args)
+            asyncio.run(make_e2e_eval_data(args))
         case 'run_e2e_eval':
-            run_e2e_eval(args)
+            asyncio.run(run_e2e_eval(args))
         case _:
             logger.error(f"Unknown mode: {args.mode}")
             sys.exit(1)

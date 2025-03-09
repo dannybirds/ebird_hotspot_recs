@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from sitta.common.models import from_json_object_hook
+from sitta.common.base import from_json_object_hook
 from sitta.evaluation.metrics import EndToEndAggregateMetrics, EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, run_end_to_end_evals
 from sitta.recommenders.base import HotspotRecommender
 from sitta.recommenders.heuristic import AnyHistoricalSightingRecommender, CalendarMonthHistoricalSightingRecommender

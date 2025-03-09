@@ -8,7 +8,7 @@ from itertools import islice
 
 from tqdm import tqdm
 
-from sitta.common.models import EndToEndEvalDatapoint, Recommendation
+from sitta.common.base import EndToEndEvalDatapoint, Recommendation
 from sitta.recommenders.base import HotspotRecommender
 
 
@@ -84,7 +84,7 @@ def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation], k: 
     return metrics
 
 
-def run_end_to_end_evals(
+async def run_end_to_end_evals(
     recommender: HotspotRecommender,
     dataset: list[EndToEndEvalDatapoint],
     k: int | None = None
@@ -102,7 +102,7 @@ def run_end_to_end_evals(
     """
     return [
         evaluate(
-            recommender.recommend(
+            await recommender.recommend(
                 datapoint.target_location,
                 datapoint.target_date,
                 datapoint.life_list

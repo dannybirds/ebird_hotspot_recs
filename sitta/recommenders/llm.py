@@ -6,7 +6,7 @@ import urllib.error
 from typing import Any, Optional
 from datetime import datetime
 
-from sitta.common.models import LifeList, Recommendation, Species
+from sitta.common.base import LifeList, Recommendation, Species
 from sitta.recommenders.base import  HotspotRecommender
 from sitta.data.data_handling import get_historical_species_seen_in_window
 

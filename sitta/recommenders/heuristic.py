@@ -4,7 +4,7 @@ Heuristic-based recommender implementations.
 
 from datetime import datetime
 
-from sitta.common.models import LifeList, Recommendation
+from sitta.common.base import LifeList, Recommendation
 from sitta.data.data_handling import (
     get_historical_species_seen_in_window,
     get_historical_species_seen_in_calendar_month
@@ -31,7 +31,7 @@ class AnyHistoricalSightingRecommender(HotspotRecommender):
         self.historical_years = historical_years
         self.day_window = day_window
 
-    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    async def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Generate recommendations based on historical sightings.
         
@@ -44,7 +44,7 @@ class AnyHistoricalSightingRecommender(HotspotRecommender):
         list[Recommendation]: List of recommendations.
         """
         # Read historical data for the target date
-        historical_sightings = get_historical_species_seen_in_window(
+        historical_sightings = await get_historical_species_seen_in_window(
             location,
             target_date,
             num_years=self.historical_years,
@@ -74,7 +74,7 @@ class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
         """
         self.historical_years = historical_years
 
-    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    async def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Generate recommendations based on historical month sightings.
         
@@ -87,7 +87,7 @@ class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
         list[Recommendation]: List of recommendations.
         """
         # Read historical data for the target month
-        historical_sightings = get_historical_species_seen_in_calendar_month(
+        historical_sightings = await get_historical_species_seen_in_calendar_month(
             location,
             target_date,
             num_years=self.historical_years

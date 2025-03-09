@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import functools
 import csv
 
-from sitta.common.models import LifeList, Sightings, Species
+from sitta.common.base import LifeList, Sightings, Species
 from sitta.data.ebird_api import get_observations_on_date, get_taxonomy
 
 
@@ -46,7 +46,7 @@ def get_all_dates_in_calendar_month_for_previous_years(d: datetime, num_years: i
     return dates
 
 
-def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightings:
+async def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightings:
     """
     Query species observed in an eBird location on +/- window days around the given date.
 
@@ -61,7 +61,7 @@ def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightin
     dates = get_date_window(date, window)
     species_seen: dict[Species, set[str]] = dict()
     for d in dates:
-        observations = get_observations_on_date(location_id, d)
+        observations = await get_observations_on_date(location_id, d)
         if observations:
             for species in observations:
                 if species['locationPrivate']:
@@ -77,7 +77,7 @@ def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightin
     return species_seen
 
 
-def get_historical_species_seen_in_window(location_id: str, target_date: datetime, num_years: int, day_window: int) -> Sightings:
+async def get_historical_species_seen_in_window(location_id: str, target_date: datetime, num_years: int, day_window: int) -> Sightings:
     """
     Query species observed in an eBird location for day_window days around (target_date.month, target_date.day) for num_years before target_date.year.
 
@@ -93,7 +93,7 @@ def get_historical_species_seen_in_window(location_id: str, target_date: datetim
     dates = [datetime(target_date.year - y, target_date.month, target_date.day) for y in range(1, num_years + 1)]
     species_seen: dict[Species, set[str]] = dict()
     for d in dates:
-        yearly_species_seen = get_species_seen(location_id, d, day_window)
+        yearly_species_seen = await get_species_seen(location_id, d, day_window)
         for sp, locs in yearly_species_seen.items():
             if sp not in species_seen:
                 species_seen[sp] = set()
@@ -101,7 +101,7 @@ def get_historical_species_seen_in_window(location_id: str, target_date: datetim
     return species_seen
 
 
-def get_historical_species_seen_in_calendar_month(location_id: str, target_date: datetime, num_years: int) -> Sightings:
+async def get_historical_species_seen_in_calendar_month(location_id: str, target_date: datetime, num_years: int) -> Sightings:
     """
     Query species observed in an eBird location for the month of target_date.month in num_years before target_date.year.
 
@@ -117,7 +117,7 @@ def get_historical_species_seen_in_calendar_month(location_id: str, target_date:
 
     species_seen: dict[Species, set[str]] = dict()
     for d in dates:
-        monthly_species_seen = get_species_seen(location_id, d)
+        monthly_species_seen = await get_species_seen(location_id, d)
         for sp, locs in monthly_species_seen.items():
             if sp not in species_seen:
                 species_seen[sp] = set()

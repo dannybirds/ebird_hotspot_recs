@@ -2,10 +2,13 @@
 Common data models and types used throughout the Sitta package.
 """
 
+import logging
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Species:
@@ -89,3 +92,20 @@ def from_json_object_hook(d: dict[str, Any]) -> Any:
         d.pop('__species__')
         return Species(**d)
     return d
+
+
+def valid_date(s: str) -> datetime:
+    """
+    Parse a date string in YYYY-MM-DD format.
+
+    Parameters:
+    s (str): Date string.
+
+    Returns:
+    datetime: Parsed date.
+    """
+    try:
+        return datetime.strptime(s, "%Y-%m-%d")
+    except ValueError:
+        logger.warning(f"Not a valid date: '{s}'.")
+        return datetime.today()
