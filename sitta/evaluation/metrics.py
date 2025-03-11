@@ -15,14 +15,11 @@ from sitta.recommenders.base import HotspotRecommender
 @dataclass
 class RecMetrics:
     """
-    Metrics for evaluating recommendations against ground truth.
+    Metrics for evaluating recommended hotspots against ground truth.
     """
-    found_lifers: int = 0
-    missed_lifers: int = 0
-    abs_error: float = 0.0
-    true_positives: int = 0
-    false_positives: int = 0
-    false_negatives: int = 0
+    target_species_found: int = 0
+    target_species_missed: int = 0
+    false_positive_hotspots: int = 0
 
 
 @dataclass
@@ -31,13 +28,10 @@ class EndToEndAggregateMetrics:
     Aggregate metrics for end-to-end evaluation.
     """
     n: int = 0
-    found_lifers: float = 0
-    missed_lifers: float = 0
-    abs_error: float = 0.0
-    true_positives: float = 0
-    false_positives: float = 0
-    false_negatives: float = 0
-
+    target_species_found: int = 0
+    target_species_missed: int = 0
+    false_positive_hotspots: int = 0    
+    
 
 def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation], k: int | None = None) -> RecMetrics:
     """
@@ -66,25 +60,20 @@ def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation], k: 
     for rec in recs:
         if rec.location in gt_dict:
             hits.add(rec.location)
-            # Give credit for all lifers found, whether predicted or not
-            metrics.found_lifers += int(gt_dict[rec.location].score)
-            metrics.abs_error += abs(rec.score - gt_dict[rec.location].score)
-            metrics.true_positives += 1
+            # Give credit for all target species found, whether predicted or not
+            metrics.target_species_found += int(gt_dict[rec.location].score)
         else:
-            metrics.abs_error += rec.score
-            metrics.false_positives += 1
+            metrics.false_positive_hotspots += 1
     
     # Count missed locations
     for gt in gt_dict.values():
         if gt.location not in hits:
-            metrics.missed_lifers += int(gt.score)
-            metrics.abs_error += gt.score
-            metrics.false_negatives += 1
+            metrics.target_species_missed += int(gt.score)
     
     return metrics
 
 
-async def run_end_to_end_evals(
+def run_end_to_end_evals(
     recommender: HotspotRecommender,
     dataset: list[EndToEndEvalDatapoint],
     k: int | None = None
@@ -102,7 +91,7 @@ async def run_end_to_end_evals(
     """
     return [
         evaluate(
-            await recommender.recommend(
+            recommender.recommend(
                 datapoint.target_location,
                 datapoint.target_date,
                 datapoint.life_list
@@ -128,12 +117,9 @@ def aggregate_end_to_end_eval_metrics(metrics: list[RecMetrics]) -> EndToEndAggr
     agg.n = len(metrics)
     
     for m in metrics:
-        agg.found_lifers += m.found_lifers
-        agg.missed_lifers += m.missed_lifers
-        agg.abs_error += m.abs_error
-        agg.true_positives += m.true_positives
-        agg.false_positives += m.false_positives
-        agg.false_negatives += m.false_negatives
+        agg.target_species_found += m.target_species_found
+        agg.target_species_missed += m.target_species_missed
+        agg.false_positive_hotspots += m.false_positive_hotspots
     
     return agg
 

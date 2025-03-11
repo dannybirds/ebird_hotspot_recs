@@ -49,7 +49,7 @@ class HotspotRecommender(ABC):
     """
     
     @abstractmethod
-    async def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Generate recommendations for a given location, target date, and life list.
         

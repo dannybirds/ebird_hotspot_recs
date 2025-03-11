@@ -11,7 +11,7 @@ import numpy as np
 from sitta.common.base import from_json_object_hook
 from sitta.evaluation.metrics import EndToEndAggregateMetrics, EndToEndEvalDatapoint, aggregate_end_to_end_eval_metrics, run_end_to_end_evals
 from sitta.recommenders.base import HotspotRecommender
-from sitta.recommenders.heuristic import AnyHistoricalSightingRecommender, CalendarMonthHistoricalSightingRecommender
+from sitta.recommenders.heuristic import DayWindowHistoricalSightingRecommender, CalendarMonthHistoricalSightingRecommender
 
 # Import Claude recommender classes
 from sitta.recommenders.llm import ClaudeRecommender
@@ -36,7 +36,7 @@ def compare_recommenders(args: argparse.Namespace) -> None:
     
     # Define recommenders to compare
     recommenders: dict[str, HotspotRecommender] = {
-        "Window-Based": AnyHistoricalSightingRecommender(historical_years=5, day_window=7),
+        "Window-Based": DayWindowHistoricalSightingRecommender(historical_years=5, day_window=7),
         "Calendar-Month": CalendarMonthHistoricalSightingRecommender(historical_years=5),
     }
     

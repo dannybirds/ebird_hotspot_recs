@@ -25,14 +25,14 @@ from sitta.evaluation.metrics import (
 )
 from sitta.recommenders.base import sightings_to_recommendations
 from sitta.recommenders.heuristic import (
-    AnyHistoricalSightingRecommender,
+    DayWindowHistoricalSightingRecommender,
     CalendarMonthHistoricalSightingRecommender,
 )
 
 logger = logging.getLogger(__name__)
 
 
-async def make_recommendation(args: argparse.Namespace) -> None:
+def make_recommendation(args: argparse.Namespace) -> None:
     """
     Generate and evaluate recommendations for a given location, date, and life list.
     
@@ -43,15 +43,15 @@ async def make_recommendation(args: argparse.Namespace) -> None:
     life_list = {k: v for k, v in parse_life_list_csv(args.life_list).items() if v < args.date}
 
     # Create and run recommender
-    recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=7)
-    recs = await recommender.recommend(args.location, args.date, life_list)
+    recommender = DayWindowHistoricalSightingRecommender(historical_years=5, day_window=7)
+    recs = recommender.recommend(args.location, args.date, life_list)
     
     print("RECOMMENDATIONS\n")
     pprint.pp(recs)
     print("\n")
 
     # Get actual sightings on the target date, filtered to only include species not in the life list
-    sightings = await get_species_seen(args.location, args.date, window=0)
+    sightings = get_species_seen(args.location, args.date, window=0)
     ground_truth_sightings = {
         k: v for k, v in sightings.items() 
         if k.species_code not in life_list
@@ -74,7 +74,7 @@ async def make_recommendation(args: argparse.Namespace) -> None:
         )
     ]
     
-    agg_metrics = aggregate_end_to_end_eval_metrics(await run_end_to_end_evals(recommender, dataset))
+    agg_metrics = aggregate_end_to_end_eval_metrics(run_end_to_end_evals(recommender, dataset))
 
     print("AGGREGATE METRICS")
     pprint.pp(agg_metrics)
@@ -96,6 +96,7 @@ async def make_e2e_eval_data(args: argparse.Namespace) -> None:
     all_datapoints: list[EndToEndEvalDatapoint] = []
     for observer_id, life_list in tqdm(life_lists.items()):
         datapoints = await fetch_all_gt_hotspots(observer_id, life_list, args.date)
+        # one datapoint per observer ID
         if datapoints:
             all_datapoints.append(random.choice(datapoints))
     
@@ -103,7 +104,7 @@ async def make_e2e_eval_data(args: argparse.Namespace) -> None:
         json.dump(all_datapoints, f, default=to_json_default)
 
 
-async def run_e2e_eval(args: argparse.Namespace) -> None:
+def run_e2e_eval(args: argparse.Namespace) -> None:
     """
     Run end-to-end evaluation.
     
@@ -121,7 +122,7 @@ async def run_e2e_eval(args: argparse.Namespace) -> None:
     recommender = CalendarMonthHistoricalSightingRecommender(historical_years=5)
     
     # Run evaluation
-    results = await run_end_to_end_evals(recommender, dataset, k=1)
+    results = run_end_to_end_evals(recommender, dataset, k=1)
     
     print("RESULTS")
     pprint.pp(results)
@@ -179,11 +180,11 @@ def main():
     # Run selected mode
     match args.mode:
         case 'recommend':
-            asyncio.run(make_recommendation(args))
+            make_recommendation(args)
         case 'make_e2e_eval_data':
             asyncio.run(make_e2e_eval_data(args))
         case 'run_e2e_eval':
-            asyncio.run(run_e2e_eval(args))
+            run_e2e_eval(args)
         case _:
             logger.error(f"Unknown mode: {args.mode}")
             sys.exit(1)
