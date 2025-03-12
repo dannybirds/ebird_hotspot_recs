@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime
-from sitta.data.data_handling import get_all_dates_in_calendar_month_for_previous_years, get_date_window, get_historical_species_seen_in_window, get_species_seen, Species, parse_life_list_csv, sci_name_to_code_map
+from sitta.data.data_handling import get_all_dates_in_calendar_month_for_previous_years, get_annual_date_window, get_date_window, get_historical_species_seen_in_window, get_species_seen, Species, parse_life_list_csv, sci_name_to_code_map
 from unittest.mock import MagicMock, patch, mock_open
 
 class TestDataHandling(unittest.TestCase):
@@ -213,13 +213,54 @@ class TestDataHandling(unittest.TestCase):
         result = get_all_dates_in_calendar_month_for_previous_years(d, num_years)
         self.assertEqual(result, expected)
 
-    def test_get_all_dates_in_calendar_month_for_previous_years_no_years(self):
-        d = datetime(2023, 10, 1)
-        num_years = 0
-        expected = []
-        result = get_all_dates_in_calendar_month_for_previous_years(d, num_years)
+    def test_get_annual_date_window_zero_window(self):
+        target_date = datetime(2023, 10, 1)
+        w = 0
+        years = 3
+        expected = [
+            datetime(2021, 10, 1),
+            datetime(2022, 10, 1),
+            datetime(2023, 10, 1)
+        ]
+        result = get_annual_date_window(target_date, w, years)
         self.assertEqual(result, expected)
 
+    def test_get_annual_date_window_one_day_window(self):
+        target_date = datetime(2023, 10, 1)
+        w = 1
+        years = 2
+        expected = [
+            datetime(2022, 9, 30),
+            datetime(2022, 10, 1),
+            datetime(2022, 10, 2),
+            datetime(2023, 9, 30),
+            datetime(2023, 10, 1),
+            datetime(2023, 10, 2)
+        ]
+        result = get_annual_date_window(target_date, w, years)
+        self.assertEqual(result, expected)
+
+    def test_get_annual_date_window_two_day_window(self):
+        target_date = datetime(2023, 10, 1)
+        w = 2
+        years = 1
+        expected = [
+            datetime(2023, 9, 29),
+            datetime(2023, 9, 30),
+            datetime(2023, 10, 1),
+            datetime(2023, 10, 2),
+            datetime(2023, 10, 3)
+        ]
+        result = get_annual_date_window(target_date, w, years)
+        self.assertEqual(result, expected)   
+
+    def test_get_annual_date_window_no_years(self):
+        target_date = datetime(2023, 10, 1)
+        w = 1
+        years = 0
+        expected = []
+        result = get_annual_date_window(target_date, w, years)
+        self.assertEqual(result, expected)
 
 if __name__ == '__main__':
     unittest.main()

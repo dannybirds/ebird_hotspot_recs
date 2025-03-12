@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import functools
 import csv
 
+import pandas as pd
+
 from sitta.common.base import LifeList, Sightings, Species
 from sitta.data.ebird_api import get_observations_on_date, get_taxonomy
 
@@ -25,6 +27,13 @@ def get_date_window(d: datetime, w: int) -> list[datetime]:
     if w < 0:
         raise ValueError(f"Window size w must be non-negative, got {w=}")
     return [d + timedelta(days=i) for i in range(-w, w + 1)]
+
+def get_annual_date_window(target_date: datetime, w: int, years: int) -> list[datetime]:
+    """
+    Returns a list of datetimes within a window around a given datetime for the specified number of past years.
+    """
+    dates = [datetime(target_date.year - y, target_date.month, target_date.day) for y in range(0, years)]
+    return sorted([d + timedelta(days=i) for i in range(-w, w + 1) for d in dates])
 
 
 def get_all_dates_in_calendar_month_for_previous_years(d: datetime, num_years: int) -> list[datetime]:
@@ -75,6 +84,16 @@ def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightin
                     species_seen[sp] = set()
                 species_seen[sp].add(species['locId'])
     return species_seen
+
+def make_sightings_dataframe(location_id: str, dates: list[datetime]) -> pd.DataFrame:
+    df = pd.DataFrame()
+    for d in dates:
+        species = [k for k in get_species_seen(location_id, d).keys()]
+        s_df = pd.DataFrame({s.species_code: True for s in species}, index=[d])
+        df = pd.concat([df, s_df], axis=0)
+    df.fillna(False, inplace=True) # type: ignore
+    return df
+
 
 
 def get_historical_species_seen_in_window(location_id: str, target_date: datetime, num_years: int, day_window: int) -> Sightings:

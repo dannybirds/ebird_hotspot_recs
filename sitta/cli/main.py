@@ -23,7 +23,7 @@ from sitta.evaluation.metrics import (
     evaluate,
     load_observer_ids
 )
-from sitta.recommenders.base import sightings_to_recommendations
+from sitta.recommenders.base import HotspotRecommender, sightings_to_recommendations
 from sitta.recommenders.heuristic import (
     DayWindowHistoricalSightingRecommender,
     CalendarMonthHistoricalSightingRecommender,
@@ -117,18 +117,15 @@ def run_e2e_eval(args: argparse.Namespace) -> None:
     dataset = [EndToEndEvalDatapoint(**d) for d in data_json]
     print(f"Loaded {len(dataset)} datapoints.")
     
-    # Choose recommender
-    # recommender = AnyHistoricalSightingRecommender(historical_years=5, day_window=7)
-    recommender = CalendarMonthHistoricalSightingRecommender(historical_years=5)
+    recommenders: dict[str, HotspotRecommender] = {}
+    recommenders['day_window'] = DayWindowHistoricalSightingRecommender(historical_years=5, day_window=7)
+    recommenders['calendar_month'] = CalendarMonthHistoricalSightingRecommender(historical_years=5)
     
     # Run evaluation
-    results = run_end_to_end_evals(recommender, dataset, k=1)
-    
-    print("RESULTS")
-    pprint.pp(results)
+    results = {n: aggregate_end_to_end_eval_metrics(run_end_to_end_evals(r, dataset, k=1)) for n, r in recommenders.items()}
     
     print("AGGREGATED RESULTS")
-    pprint.pp(aggregate_end_to_end_eval_metrics(results))
+    pprint.pp(results)
 
 
 def main():
