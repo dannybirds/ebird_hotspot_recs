@@ -92,8 +92,27 @@ def make_sightings_dataframe(location_id: str, dates: list[datetime]) -> pd.Data
         s_df = pd.DataFrame({s.species_code: True for s in species}, index=[d])
         df = pd.concat([df, s_df], axis=0)
     df.fillna(False, inplace=True) # type: ignore
+    df.infer_objects()
+    df.index.name = 'date' # type: ignore
+    df.columns.name = 'species_code'
     return df
 
+def make_historical_sightings_dataframe_for_location(location_id: str, target_date: datetime, num_years: int, day_window: int) -> pd.DataFrame:
+    """
+    Create a DataFrame of historical sightings for a given location and date.
+
+    Parameters:
+    location_id (str): The eBird location identifier.
+    target_date (datetime): The target date around which to query in past years.
+    num_years (int): The number of years to query, including the target year.
+    day_window (int): The window size in days around target_date.month/target_date.day.
+
+    Returns:
+    pd.DataFrame: A DataFrame with species codes as columns and dates as indices.
+    """
+    dates = get_annual_date_window(target_date, day_window, num_years)
+    df = make_sightings_dataframe(location_id, dates)
+    return df
 
 
 def get_historical_species_seen_in_window(location_id: str, target_date: datetime, num_years: int, day_window: int) -> Sightings:

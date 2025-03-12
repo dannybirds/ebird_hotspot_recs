@@ -1,6 +1,8 @@
 import unittest
 from datetime import datetime
-from sitta.data.data_handling import get_all_dates_in_calendar_month_for_previous_years, get_annual_date_window, get_date_window, get_historical_species_seen_in_window, get_species_seen, Species, parse_life_list_csv, sci_name_to_code_map
+
+import pandas as pd
+from sitta.data.data_handling import get_all_dates_in_calendar_month_for_previous_years, get_annual_date_window, get_date_window, get_historical_species_seen_in_window, get_species_seen, Species, make_historical_sightings_dataframe_for_location, make_sightings_dataframe, parse_life_list_csv, sci_name_to_code_map
 from unittest.mock import MagicMock, patch, mock_open
 
 class TestDataHandling(unittest.TestCase):
@@ -261,6 +263,71 @@ class TestDataHandling(unittest.TestCase):
         expected = []
         result = get_annual_date_window(target_date, w, years)
         self.assertEqual(result, expected)
+
+    @patch('sitta.data.data_handling.get_species_seen')
+    def test_make_sightings_dataframe(self, mock_get_species_seen: MagicMock):
+        mock_get_species_seen.side_effect = [
+            {Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis'): {'L123456'}},
+            {Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'): {'L234567'}},
+            {Species(common_name='American Robin', species_code='amerob', scientific_name='Turdus migratorius'): {'L345678'}}
+        ]
+        location_id = 'UNUSED'
+        dates = [datetime(2023, 10, 1), datetime(2023, 10, 2), datetime(2023, 10, 3)]
+        expected_data = {
+            'nocar': [True, False, False],
+            'bluja': [False, True, False],
+            'amerob': [False, False, True]
+        }
+        expected_df = pd.DataFrame(expected_data, index=dates).fillna(False) # type: ignore
+
+        test_df = make_sightings_dataframe(location_id, dates)
+        self.assertEqual(test_df.shape, expected_df.shape)
+        self.assertTrue(test_df.equals(expected_df)) # type: ignore     
+
+    @patch('sitta.data.data_handling.get_species_seen')
+    def test_make_historical_sightings_dataframe_for_location(self, mock_get_species_seen: MagicMock):
+        location_id = 'UNUSED'
+        target_date = datetime(2023, 10, 1)
+        num_years = 3
+        day_window = 1
+
+        mock_get_species_seen.side_effect = [
+            {Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis'): {'L123456'}},
+            {Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'): {'L234567'}},
+            {Species(common_name='American Robin', species_code='amerob', scientific_name='Turdus migratorius'): {'L345678'}},
+        ] * 3
+
+        dates = [
+            datetime(2021, 9, 30), datetime(2021, 10, 1), datetime(2021, 10, 2),
+            datetime(2022, 9, 30), datetime(2022, 10, 1), datetime(2022, 10, 2),
+            datetime(2023, 9, 30), datetime(2023, 10, 1), datetime(2023, 10, 2)
+        ]
+
+        expected_data = {
+            'nocar': [True, False, False] * 3,
+            'bluja': [False, True, False] * 3,
+            'amerob': [False, False, True] * 3
+        }
+        expected_df = pd.DataFrame(expected_data, index=dates).fillna(False) # type: ignore
+
+        result_df = make_historical_sightings_dataframe_for_location(location_id, target_date, num_years, day_window)
+        self.assertTrue(result_df.equals(expected_df)) # type: ignore
+        mock_get_species_seen.assert_called()
+
+    @patch('sitta.data.data_handling.get_species_seen')
+    def test_make_historical_sightings_dataframe_for_location_empty_dates(self, mock_get_species_seen: MagicMock):
+        location_id = 'UNUSED'
+        target_date = datetime(2023, 10, 1)
+        num_years = 0
+        day_window = 1
+
+        mock_get_species_seen.return_value = {}
+
+        expected_df = pd.DataFrame()
+
+        result_df = make_historical_sightings_dataframe_for_location(location_id, target_date, num_years, day_window)
+        self.assertTrue(result_df.equals(expected_df)) # type: ignore
+        mock_get_species_seen.assert_not_called()
 
 if __name__ == '__main__':
     unittest.main()
