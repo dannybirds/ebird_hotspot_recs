@@ -70,15 +70,15 @@ class SimpleNNDataset(torch.utils.data.Dataset):
             labels = pd.concat([labels, df.loc[max(df.index)]]) # type: ignore
             inputs = pd.concat([inputs, df.drop(max(df.index))], axis=1) # type: ignore
             print(f'{inputs.shape=}, {labels.shape=}')
-        self.inputs: NDArray[bool] = inputs.to_numpy() # type: ignore
+        self.inputs: NDArray[np.bool_] = inputs.to_numpy(dtype=np.bool_) # type: ignore
         self.labels: NDArray[np.bool_] = labels.to_numpy(dtype=np.bool_) # type: ignore
         
 
     def __len__(self) -> int:
         return self.labels.shape[0]
     
-    def __getitem__(self, idx: int) -> tuple[Any, Any]:
-        return self.inputs[:,idx], self.labels[idx] # type: ignore
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
+        return torch.from_numpy(self.inputs[:,idx]), torch.from_numpy(self.labels[idx]) # type: ignore
 
 class SimpleNNPredictor(BasePredictor):
     """
