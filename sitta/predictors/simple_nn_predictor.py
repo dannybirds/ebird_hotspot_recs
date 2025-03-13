@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any
 import pandas as pd
 import torch
 import torch.utils.data
@@ -9,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from sitta.common.base import Species
-from sitta.data.data_handling import get_species_seen, make_historical_sightings_dataframe_for_location
+from sitta.data.data_handling import get_species_seen, make_historical_sightings_dataframe_for_location, set_sightings_dataframe_names
 
 
 class BasePredictor(ABC):
@@ -40,7 +39,7 @@ def make_datapoints_for_location(location_id: str, target_date: datetime, day_wi
     """
 
     species_seen = {s.species_code: True for s in get_species_seen(location_id, target_date)}
-    seen_df = pd.DataFrame(species_seen, index=[target_date])
+    seen_df = pd.DataFrame(species_seen, index=pd.Index([target_date]))
 
     sightings_df = make_historical_sightings_dataframe_for_location(
         location_id,
@@ -50,10 +49,11 @@ def make_datapoints_for_location(location_id: str, target_date: datetime, day_wi
     )
     sightings_df = pd.concat([sightings_df, seen_df], axis=0)
     sightings_df = sightings_df.fillna(False) # type: ignore
+    sightings_df = set_sightings_dataframe_names(sightings_df)
     return sightings_df
 
 
-class SimpleNNDataset(torch.utils.data.Dataset):
+class SimpleNNDataset(torch.utils.data.Dataset[tuple[torch.Tensor, torch.Tensor]]):
     """
     A dataset class for historical sighting data.
     """
@@ -66,13 +66,12 @@ class SimpleNNDataset(torch.utils.data.Dataset):
         labels = pd.DataFrame()
         inputs = pd.DataFrame()
         for f in csv_files:
-            df = pd.read_csv(f) # type: ignore
-            labels = pd.concat([labels, df.loc[max(df.index)]]) # type: ignore
-            inputs = pd.concat([inputs, df.drop(max(df.index))], axis=1) # type: ignore
-            print(f'{inputs.shape=}, {labels.shape=}')
+            df: pd.DataFrame = pd.read_csv(f, index_col='date') # pyright: ignore[reportUnknownMemberType]
+            max_idx: int  = max(list(df.index)) # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+            labels = pd.concat([labels, df.loc[max_idx]])  # pyright: ignore[reportUnknownArgumentType]
+            inputs = pd.concat([inputs, df.drop(max_idx)], axis=1) # pyright: ignore[reportUnknownArgumentType]
         self.inputs: NDArray[np.bool_] = inputs.to_numpy(dtype=np.bool_) # type: ignore
         self.labels: NDArray[np.bool_] = labels.to_numpy(dtype=np.bool_) # type: ignore
-        
 
     def __len__(self) -> int:
         return self.labels.shape[0]
@@ -117,3 +116,4 @@ class SimpleNNPredictor(BasePredictor):
         # Convert inputs to tensors and pass through the
         # model to get the prediction
         location_tensor = torch.tensor(location_id, dtype=torch.float32)
+        return 0.0

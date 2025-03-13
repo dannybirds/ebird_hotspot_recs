@@ -85,16 +85,20 @@ def get_species_seen(location_id: str, date: datetime, window: int=0) -> Sightin
                 species_seen[sp].add(species['locId'])
     return species_seen
 
+def set_sightings_dataframe_names(df: pd.DataFrame) -> pd.DataFrame:
+    df.index.name = 'date' # pyright: ignore[reportUnknownMemberType]
+    df.columns.name = 'species_code'
+    return df
+
 def make_sightings_dataframe(location_id: str, dates: list[datetime]) -> pd.DataFrame:
     df = pd.DataFrame()
     for d in dates:
         species = [k for k in get_species_seen(location_id, d).keys()]
         s_df = pd.DataFrame({s.species_code: True for s in species}, index=[d])
         df = pd.concat([df, s_df], axis=0)
-    df.fillna(False, inplace=True) # type: ignore
+    df.fillna(False, inplace=True) # pyright: ignore[reportUnknownMemberType]
     df.infer_objects()
-    df.index.name = 'date' # type: ignore
-    df.columns.name = 'species_code'
+    df = set_sightings_dataframe_names(df)
     return df
 
 def make_historical_sightings_dataframe_for_location(location_id: str, target_date: datetime, num_years: int, day_window: int) -> pd.DataFrame:
