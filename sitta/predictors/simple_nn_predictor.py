@@ -129,7 +129,7 @@ class SimpleNNPredictor(BasePredictor):
         # location_tensor = torch.tensor(location_id, dtype=torch.float32)
         return 0.0
     
-    def train(self, dataset: SimpleNNDataset, num_epochs: int = 10):
+    def train(self, dataset: SimpleNNDataset, num_epochs: int = 10, model_file: str|None = None) -> torch.nn.Module:
         """
         Trains the model on the provided data.
         
@@ -162,6 +162,11 @@ class SimpleNNPredictor(BasePredictor):
                 loss.backward()
                 optimizer.step() # pyright: ignore[reportUnknownMemberType]
 
-                if epoch % 10 == 0:
+                if epoch % 100 == 0:
                     print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(data_loader)}], Loss: {loss.item():.4f}')
                     print(f'{model.linear.weight=}')
+        
+        if model_file:
+            torch.save(model.state_dict(), model_file) # pyright: ignore[reportUnknownMemberType]
+            print(f"Model saved to {model_file}")
+        return model
