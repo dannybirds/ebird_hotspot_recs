@@ -77,7 +77,18 @@ class SimpleNNDataset(torch.utils.data.Dataset[tuple[torch.Tensor, torch.Tensor]
         return self.labels.shape[0]
     
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
-        return torch.from_numpy(self.inputs[:,idx]), torch.from_numpy(self.labels[idx]) # type: ignore
+        return torch.from_numpy(self.inputs[:,idx]).float(), torch.from_numpy(self.labels[idx]).float()  # pyright: ignore[reportUnknownMemberType]
+
+
+
+class LogisticRegression(torch.nn.Module):
+    def __init__(self, input_dim: int) -> None:
+        super().__init__() # pyright: ignore[reportUnknownMemberType]
+        self.linear = torch.nn.Linear(input_dim, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        out = torch.sigmoid(self.linear(x))
+        return out
 
 class SimpleNNPredictor(BasePredictor):
     """
@@ -115,5 +126,42 @@ class SimpleNNPredictor(BasePredictor):
         """
         # Convert inputs to tensors and pass through the
         # model to get the prediction
-        location_tensor = torch.tensor(location_id, dtype=torch.float32)
+        # location_tensor = torch.tensor(location_id, dtype=torch.float32)
         return 0.0
+    
+    def train(self, dataset: SimpleNNDataset, num_epochs: int = 10):
+        """
+        Trains the model on the provided data.
+        
+        Parameters:
+        dataset (SimpleNNDataset): The dataset to train on.
+        num_epochs (int): The number of epochs to train for.
+        """
+        device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+        print(f"Using {device} device")
+        data_loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
+
+        model = LogisticRegression(self.input_dim())
+        criterion = torch.nn.BCELoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        print("Training model...")
+        model.to(device)
+        print(model)
+        for epoch in range(num_epochs):
+            for i, (inputs, labels) in enumerate(data_loader):
+                # Move tensors to the configured device
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+
+                # Forward pass
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+
+                # Backward and optimize
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step() # pyright: ignore[reportUnknownMemberType]
+
+                if epoch % 10 == 0:
+                    print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(data_loader)}], Loss: {loss.item():.4f}')
+                    print(f'{model.linear.weight=}')
