@@ -224,9 +224,11 @@ class TestEbirdApi(unittest.TestCase):
             'bluja': [False, True, False] * 3,
             'amerob': [False, False, True] * 3
         }
-        expected_df = pd.DataFrame(expected_data, index=dates).fillna(False) # type: ignore
+        expected_df = pd.DataFrame(expected_data, index=dates) # type: ignore
 
         ebird_provider = EBirdAPIDataProvider(api_key="UNUSED")
+        ebird_provider.set_sightings_dataframe_names(expected_df)
+        
         result_df = ebird_provider.make_historical_sightings_dataframe_for_location(location_id, target_date, num_years, day_window)
         self.assertTrue(result_df.equals(expected_df)) # type: ignore
         mock_get_species_seen.assert_called()

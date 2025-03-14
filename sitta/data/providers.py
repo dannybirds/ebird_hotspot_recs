@@ -25,8 +25,9 @@ class EBirdDataProvider(ABC):
             species = [k for k in self.get_species_seen(location_id, d).keys()]
             s_df = pd.DataFrame({s.species_code: True for s in species}, index=[d])
             df = pd.concat([df, s_df], axis=0)
-        df.fillna(False, inplace=True) # pyright: ignore[reportUnknownMemberType]
-        df.infer_objects()
+        with pd.option_context('future.no_silent_downcasting', True):
+            df.fillna(False, inplace=True) # pyright: ignore[reportUnknownMemberType]
+        df = df.infer_objects()
         df = self.set_sightings_dataframe_names(df)
         return df
     
