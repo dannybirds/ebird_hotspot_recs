@@ -130,13 +130,13 @@ class TestEbirdApi(unittest.TestCase):
         result = ebird_provider.get_species_seen(location_id, date, window=1)
         self.assertCountEqual(result, expected)        
 
-    @patch('sitta.data.ebird_api.EBirdAPIDataProvider.get_species_seen')
-    def test_get_historical_species_seen(self, mock_get_species_seen: MagicMock):
-        mock_get_species_seen.side_effect = [
-            {Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis'): {'L123456'}},
-            {Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'): {'L234567'}},
-            {Species(common_name='American Robin', species_code='amerob', scientific_name='Turdus migratorius'): {'L345678'}}
-        ]
+    @patch('sitta.data.ebird_api.EBirdAPIDataProvider.get_species_seen_on_dates')
+    def test_get_historical_species_seen(self, mock_get_species_seen_on_date: MagicMock):
+        mock_get_species_seen_on_date.return_value = {
+            Species(common_name='Northern Cardinal', species_code='nocar', scientific_name='Cardinalis cardinalis'): {'L123456'},
+            Species(common_name='Blue Jay', species_code='bluja', scientific_name='Cyanocitta cristata'): {'L234567'},
+            Species(common_name='American Robin', species_code='amerob', scientific_name='Turdus migratorius'): {'L345678'}
+        }
         location_id = 'UNUSED'
         target_date = datetime(2023, 10, 1)
         num_years = 3
@@ -150,9 +150,9 @@ class TestEbirdApi(unittest.TestCase):
         result = ebird_provider.get_historical_species_seen_in_window(location_id, target_date, num_years, day_window)
         self.assertEqual(result, expected)
 
-    @patch('sitta.data.ebird_api.EBirdAPIDataProvider.get_species_seen')
-    def test_get_historical_species_seen_no_species(self, mock_get_species_seen: MagicMock):
-        mock_get_species_seen.return_value = dict()
+    @patch('sitta.data.ebird_api.EBirdAPIDataProvider.get_species_seen_on_dates')
+    def test_get_historical_species_seen_no_species(self, mock_get_species_seen_on_date: MagicMock):
+        mock_get_species_seen_on_date.return_value = dict()
         location_id = 'L123456'
         target_date = datetime(2023, 10, 1)
         num_years = 3

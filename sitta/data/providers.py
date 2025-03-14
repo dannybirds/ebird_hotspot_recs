@@ -10,7 +10,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from sitta.data.data_handling import get_annual_date_window
+from sitta.data.data_handling import get_all_dates_in_calendar_month_for_previous_years, get_annual_date_window, get_date_window
 from sitta.common.base import Sightings
 
 
@@ -67,6 +67,19 @@ class EBirdDataProvider(ABC):
         pass
     
     @abstractmethod
+    def get_species_seen_on_dates(self, location_id: str, target_dates: list[datetime]) -> Sightings:
+        """
+        Get species observed in an eBird location on specific dates.
+        
+        Parameters:
+        location_id (str): The eBird location identifier.
+        target_dates (list[datetime]): The list of dates for the query.
+        
+        Returns:
+        Sightings: A dictionary of species observed and the locations where they were seen.
+        """
+        pass
+
     def get_species_seen(self, location_id: str, target_date: datetime, window: int = 0) -> Sightings:
         """
         Get species observed in an eBird location within a window of days around a target date.
@@ -79,9 +92,10 @@ class EBirdDataProvider(ABC):
         Returns:
         Sightings: A dictionary of species observed and the locations where they were seen.
         """
-        pass
-    
-    @abstractmethod
+        dates = get_date_window(target_date, window)
+        return self.get_species_seen_on_dates(location_id, dates)
+
+
     def get_historical_species_seen_in_window(
         self, location_id: str, target_date: datetime, num_years: int, day_window: int
     ) -> Sightings:
@@ -97,9 +111,10 @@ class EBirdDataProvider(ABC):
         Returns:
         Sightings: A dictionary of species observed and the locations where they were seen.
         """
-        pass
+        dates = [datetime(target_date.year - y, target_date.month, target_date.day) for y in range(1, num_years + 1)]
+        return self.get_species_seen_on_dates(location_id, dates)
+
     
-    @abstractmethod
     def get_historical_species_seen_in_calendar_month(
         self, location_id: str, target_date: datetime, num_years: int
     ) -> Sightings:
@@ -114,4 +129,6 @@ class EBirdDataProvider(ABC):
         Returns:
         Sightings: A dictionary of species observed and the locations where they were seen.
         """
-        pass
+        dates = get_all_dates_in_calendar_month_for_previous_years(target_date, num_years)
+        return self.get_species_seen_on_dates(location_id, dates)
+

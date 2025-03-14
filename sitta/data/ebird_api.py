@@ -133,26 +133,21 @@ class EBirdAPIDataProvider(EBirdDataProvider):
         """
         self.fetcher = EBirdAPICaller(api_key=api_key)
     
-    def get_species_seen(self, location_id: str, target_date: datetime, window: int = 0) -> Sightings:
+    def get_species_seen_on_dates(self, location_id: str, target_dates: list[datetime]) -> Sightings:
         """
         Get species observed using the eBird API.
         
         Parameters:
         location_id (str): The eBird location identifier.
-        date (datetime): The date for the query.
-        window (int): The window size in days around the given date.
+        target_dates (list[datetime]): The list of dates for the query.
         
         Returns:
         Sightings: A dictionary of species observed and the locations where they were seen, 
         which can be sub-locations of the given location_id (e.g. hotspots within a county).
         """
-        # Import here to avoid circular imports
-        from sitta.data.data_handling import get_date_window
         
-        dates = get_date_window(target_date, window)
         species_seen: dict[Species, set[str]] = {}
-        
-        for d in dates:
+        for d in target_dates:
             observations = self.fetcher.get_observations_on_date(location_id, d)
             if observations:
                 for species in observations:
@@ -168,59 +163,7 @@ class EBirdAPIDataProvider(EBirdDataProvider):
                     species_seen[sp].add(species['locId'])
         
         return species_seen
-    
-    def get_historical_species_seen_in_window(
-        self, location_id: str, target_date: datetime, num_years: int, day_window: int
-    ) -> Sightings:
-        """
-        Query species observed in an eBird location for day_window days around (target_date.month, target_date.day) 
-        for num_years before target_date.year
-
-        Parameters:
-        location_id (str): The eBird location identifier.
-        target_date (datetime): The target date around which to query in past years.
-        num_years (int): The number of years before target_date.year to query.
-        day_window (int): The window size in days around target_date.month/target_date.day.
-
-        Returns:
-        Sightings: A dictionary of species observed and the locations where they were seen.
-        """
-        dates = [datetime(target_date.year - y, target_date.month, target_date.day) for y in range(1, num_years + 1)]
-        species_seen: dict[Species, set[str]] = dict()
-        for d in dates:
-            yearly_species_seen = self.get_species_seen(location_id, d, day_window)
-            for sp, locs in yearly_species_seen.items():
-                if sp not in species_seen:
-                    species_seen[sp] = set()
-                species_seen[sp].update(locs)
-        return species_seen
-    
-    def get_historical_species_seen_in_calendar_month(
-        self, location_id: str, target_date: datetime, num_years: int
-    ) -> Sightings:
-        """
-        Get historical species seen in the same calendar month as the target date.
-        
-        Parameters:
-        location_id (str): The eBird location identifier.
-        target_date (datetime): The target date.
-        num_years (int): Number of years to go back.
-        
-        Returns:
-        Sightings: A dictionary of species observed and the locations where they were seen.
-        """
-        dates = get_all_dates_in_calendar_month_for_previous_years(target_date, num_years)
-        
-        species_seen: dict[Species, set[str]] = {}
-        for d in dates:
-            monthly_species_seen = self.get_species_seen(location_id, d)
-            for sp, locs in monthly_species_seen.items():
-                if sp not in species_seen:
-                    species_seen[sp] = set()
-                species_seen[sp].update(locs)
-        
-        return species_seen
-    
+            
     @functools.cache
     def sci_name_to_code_map(self) -> dict[str, str]:
         """

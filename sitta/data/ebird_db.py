@@ -2,14 +2,21 @@
 Interface with the eBird database to retrieve observation data.
 """
 
+import functools
 import os
 import psycopg
 from datetime import datetime
 import psycopg.rows
 
-from sitta.common.base import EndToEndEvalDatapoint, LifeList, Recommendation
+from sitta.data.data_handling import get_date_window
+from sitta.data.providers import EBirdDataProvider
+from sitta.common.base import EndToEndEvalDatapoint, LifeList, Recommendation, Sightings, Species
 
 DB_NAME = "ebird_us"
+LOCALITIES_TABLE = "localities"
+CHECKLISTS_TABLE = "checklists"
+SPECIES_TABLE = "species"
+OBSERVATIONS_TABLE = "observations"
 
 def open_connection(autocommit: bool=False) -> psycopg.Connection:
     """
@@ -137,3 +144,81 @@ async def fetch_all_gt_hotspots(observer_id: str, life_list: LifeList, target_da
         ) for county, recs in gts.items()
     ]
     return datapoints
+
+
+class LocalDBDataProvider(EBirdDataProvider):
+    """
+    eBird data provider that uses the eBird API as the data source.
+    """
+
+    def __init__(self, db_name: str|None = None, postgres_user: str|None = None, postgres_pwd:str|None = None) -> None:
+        """
+        Initialize the DB-based data provider.
+        """
+        db_name = db_name or DB_NAME
+        if not db_name:
+            raise ValueError("db_name must be provided")
+        self.db_name = db_name
+
+        postgres_user = postgres_user or os.getenv('POSTGRES_USER')
+        if not postgres_user:
+            raise ValueError("postgres_user must be provided or set as POSTGRES_USER environment variable")
+        self.postgres_user = postgres_user
+
+        postgres_pwd = postgres_pwd or os.getenv('POSTGRES_PWD')
+        if not postgres_pwd:
+            raise ValueError("postgres_pwd must be provided or set as POSTGRES_PWD environment variable")
+        self.postgres_pwd = postgres_pwd
+
+    def get_species_seen_on_dates(self, location_id: str, target_dates: list[datetime]) -> Sightings:
+        """
+        Get species observed using the local database.
+        
+        Parameters:
+        location_id (str): The eBird location identifier.
+        target_dates (list[datetime]): The dates for the query.
+        
+        Returns:
+        Sightings: A dictionary of species observed and the locations where they were seen, 
+        which can be sub-locations of the given location_id (e.g. hotspots within a county).
+        """
+        species_seen: dict[Species, set[str]] = {}
+        with open_connection() as conn:
+            with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
+                q = """
+                SELECT
+                    observation_date, species_code, scientific_name, common_name ARRAY_AGG(locality_id) AS locality_ids
+                FROM checklists JOIN observations USING (sampling_event_id) JOIN species USING (species_code)
+                WHERE
+                    %s = ANY(ARRAY[county_code, state_code, country_code, locality_id])
+                    AND observation_date = ANY(%s)
+                GROUP BY observation_date, species_code, scientific_name, common_name ;
+                """
+                cur.execute(q, [location_id, target_dates])
+                rows = cur.fetchall()
+                
+                for row in rows:
+                    sp = Species(
+                        common_name=row['common_name'],
+                        species_code=row['species_code'],
+                        scientific_name=row['scientific_name']
+                    )
+                    if sp not in species_seen:
+                        species_seen[sp] = set()
+                    species_seen[sp].update(row['locality_ids'])
+
+        return species_seen
+    
+    @functools.cache
+    def sci_name_to_code_map(self) -> dict[str, str]:
+        """
+        Create a mapping from scientific names to species codes.
+        
+        Returns:
+            Dictionary mapping scientific names to species codes
+        """
+        with open_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT scientific_name, species_code FROM {SPECIES_TABLE}")
+                species_map = {row[0]: row[1] for row in cur.fetchall()}
+        return species_map
