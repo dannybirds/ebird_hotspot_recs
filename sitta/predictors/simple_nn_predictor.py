@@ -7,9 +7,8 @@ import numpy as np
 
 from numpy.typing import NDArray
 
+from ebird_hotspot_recs.sitta.data.providers import EBirdDataProvider
 from sitta.common.base import Species
-from sitta.data.data_handling import get_species_seen, make_historical_sightings_dataframe_for_location, set_sightings_dataframe_names
-
 
 class BasePredictor(ABC):
     """
@@ -24,24 +23,12 @@ class BasePredictor(ABC):
         pass
 
 
-def make_datapoints_for_location(location_id: str, target_date: datetime, day_window: int, years: int) -> pd.DataFrame:
-    """
-    Converts the input data into a format suitable for the model.
-    
-    Parameters:
-    location_id (str): The eBird location ID.
-    target_date (datetime): The target date.
-    day_window (int): The number of days before and after the target date to include, for all years
-    years (int): The number of previous years to look at.
-    
-    Returns:
-    dict: A dictionary containing the input data for the model.
-    """
 
-    species_seen = {s.species_code: True for s in get_species_seen(location_id, target_date)}
+def make_datapoints_for_location(provider: EBirdDataProvider, location_id: str, target_date: datetime, day_window: int, years: int) -> pd.DataFrame:
+    species_seen = {s.species_code: True for s in provider.get_species_seen(location_id, target_date)}
     seen_df = pd.DataFrame(species_seen, index=pd.Index([target_date]))
 
-    sightings_df = make_historical_sightings_dataframe_for_location(
+    sightings_df = provider.make_historical_sightings_dataframe_for_location(
         location_id,
         datetime(target_date.year - 1, target_date.month, target_date.day),
         num_years=years,
@@ -49,7 +36,7 @@ def make_datapoints_for_location(location_id: str, target_date: datetime, day_wi
     )
     sightings_df = pd.concat([sightings_df, seen_df], axis=0)
     sightings_df = sightings_df.fillna(False) # type: ignore
-    sightings_df = set_sightings_dataframe_names(sightings_df)
+    sightings_df = provider.set_sightings_dataframe_names(sightings_df)
     return sightings_df
 
 

@@ -4,11 +4,9 @@ Heuristic-based recommender implementations.
 
 from datetime import datetime
 
+from sitta.data.providers import EBirdDataProvider
+from sitta.data.ebird_api import EBirdAPIDataProvider
 from sitta.common.base import LifeList, Recommendation
-from sitta.data.data_handling import (
-    get_historical_species_seen_in_window,
-    get_historical_species_seen_in_calendar_month
-)
 from sitta.recommenders.base import HotspotRecommender, sightings_to_recommendations
 
 
@@ -20,7 +18,7 @@ class DayWindowHistoricalSightingRecommender(HotspotRecommender):
     to find species that were recorded at the location.
     """
     
-    def __init__(self, historical_years: int=3, day_window: int=1):
+    def __init__(self, historical_years: int=3, day_window: int=1, provider: EBirdDataProvider|None=None):
         """
         Initialize the recommender.
         
@@ -30,6 +28,8 @@ class DayWindowHistoricalSightingRecommender(HotspotRecommender):
         """
         self.historical_years = historical_years
         self.day_window = day_window
+        provider = provider or EBirdAPIDataProvider()
+        self.provider = provider 
 
     def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
@@ -44,7 +44,7 @@ class DayWindowHistoricalSightingRecommender(HotspotRecommender):
         list[Recommendation]: List of recommendations.
         """
         # Read historical data for the target date
-        historical_sightings = get_historical_species_seen_in_window(
+        historical_sightings = self.provider.get_historical_species_seen_in_window(
             location,
             target_date,
             num_years=self.historical_years,
@@ -73,6 +73,7 @@ class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
         historical_years (int): Number of previous years to look at.
         """
         self.historical_years = historical_years
+        self.provider = EBirdAPIDataProvider()
 
     def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
@@ -87,7 +88,7 @@ class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
         list[Recommendation]: List of recommendations.
         """
         # Read historical data for the target month
-        historical_sightings = get_historical_species_seen_in_calendar_month(
+        historical_sightings = self.provider.get_historical_species_seen_in_calendar_month(
             location,
             target_date,
             num_years=self.historical_years

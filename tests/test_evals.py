@@ -1,5 +1,6 @@
 import unittest
-from sitta.data.data_handling import Species
+
+from sitta.common.base import Species
 from sitta.recommenders.base import Recommendation
 from sitta.evaluation.metrics import evaluate
 

@@ -1,12 +1,13 @@
 import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
+from sitta.data.ebird_api import EBirdAPIDataProvider
 from sitta.recommenders.base import sightings_to_recommendations
 from sitta.recommenders.heuristic import DayWindowHistoricalSightingRecommender, Recommendation, sightings_to_recommendations
-from sitta.data.data_handling import Species
+from sitta.common.base import Species
 
 class TestRecommenders(unittest.IsolatedAsyncioTestCase):
-    @patch('sitta.recommenders.heuristic.get_historical_species_seen_in_window')
+    @patch('sitta.recommenders.heuristic.EBirdAPIDataProvider.get_historical_species_seen_in_window')
     async def test_any_historical_sighting_recommender(self, mock_get_historical_species_seen_in_window: MagicMock):
         location = "Test Location"
         target_date = datetime(2023, 10, 1)
@@ -22,7 +23,8 @@ class TestRecommenders(unittest.IsolatedAsyncioTestCase):
         }
         mock_get_historical_species_seen_in_window.return_value = mock_historical_sightings
 
-        recommender = DayWindowHistoricalSightingRecommender(historical_years=3, day_window=1)
+        provider = EBirdAPIDataProvider(api_key="fake_key")
+        recommender = DayWindowHistoricalSightingRecommender(historical_years=3, day_window=1, provider=provider)
         recommendations = recommender.recommend(location, target_date, life_list)
 
         expected_recommendations = [
