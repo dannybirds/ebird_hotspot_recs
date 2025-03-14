@@ -8,7 +8,6 @@ import psycopg
 from datetime import datetime
 import psycopg.rows
 
-from sitta.data.data_handling import get_date_window
 from sitta.data.providers import EBirdDataProvider
 from sitta.common.base import EndToEndEvalDatapoint, LifeList, Recommendation, Sightings, Species
 

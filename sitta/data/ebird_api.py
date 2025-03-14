@@ -13,7 +13,6 @@ import json
 import logging
 
 from sitta.common.base import Sightings, Species
-from sitta.data.data_handling import get_all_dates_in_calendar_month_for_previous_years
 from sitta.data.providers import EBirdDataProvider
 
 DEFAULT_CACHE_DIR = os.path.expanduser("~/.ebird-api-cache")
