@@ -2,7 +2,8 @@ import json
 from typing import Any
 import unittest
 from datetime import datetime
-from sitta.common.base import Recommendation, Species, from_json_object_hook, to_json_default, EndToEndEvalDatapoint
+from test_utils import CARDINAL, create_test_life_list, create_test_recommendations
+from sitta.common.base import from_json_object_hook, to_json_default, EndToEndEvalDatapoint
 
 class TestCommon(unittest.TestCase):
     def test_datetime_serialization(self):
@@ -14,16 +15,26 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(rt, dt)
 
     def test_end_to_end_eval_datapoint_json_roundtrip(self):
-        s1 = Species(common_name='Fake Species 1', species_code='faksp1', scientific_name='Lorem Ipsum')
-        s2 = Species(common_name='Fake Species 2', species_code='faksp2', scientific_name='Dolor Sit')
+        life_list = create_test_life_list([CARDINAL])
+        ground_truth = create_test_recommendations(
+            species_per_location=1, 
+            location_count=1, 
+            base_location_id="L"
+        )
+        
+        # Create a test datapoint
         datapoint = EndToEndEvalDatapoint(
             target_location='US-NY-001',
             target_date=datetime(2023, 10, 5, 15, 30, 45),
-            life_list={s1.species_code: datetime(2023, 10, 5, 5, 30, 45)},
-            ground_truth=[Recommendation(location='L123456', score=1.0, species=[s2])]
+            life_list=life_list,
+            ground_truth=ground_truth
         )
+        
+        # Convert to JSON and back
         json_str = json.dumps(datapoint, default=to_json_default)
         rt = EndToEndEvalDatapoint(**json.loads(json_str, object_hook=from_json_object_hook))
+        
+        # Verify equality
         self.assertEqual(rt, datapoint)
 
 if __name__ == '__main__':

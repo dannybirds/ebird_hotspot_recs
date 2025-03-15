@@ -36,6 +36,11 @@ class Recommendation:
     score: float
     species: list[Species]
 
+    def __eq__(self, value: object) -> bool:
+        if type(value) is not Recommendation:
+            return False
+        return self.location == value.location and self.score == value.score and set(self.species) == set(value.species)
+
 
 @dataclass
 class EndToEndEvalDatapoint:
