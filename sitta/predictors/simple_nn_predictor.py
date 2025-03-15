@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from datetime import datetime
 import pandas as pd
 import torch
@@ -7,22 +6,9 @@ import numpy as np
 
 from numpy.typing import NDArray
 
-from ebird_hotspot_recs.sitta.data.providers import EBirdDataProvider
+from sitta.data.providers import EBirdDataProvider
+from sitta.predictors.base import BasePredictor
 from sitta.common.base import Species
-
-class BasePredictor(ABC):
-    """
-    Abstract base class for predictors that predict whether a species will be seen at a location on a target date.
-    """
-    
-    @abstractmethod
-    def predict(self, location_id: str, target_date: datetime, species: Species) -> float:
-        """
-        Returns the probability of a species being seen at a location.
-        """
-        pass
-
-
 
 def make_datapoints_for_location(provider: EBirdDataProvider, location_id: str, target_date: datetime, day_window: int, years: int) -> pd.DataFrame:
     species_seen = {s.species_code: True for s in provider.get_species_seen(location_id, target_date)}
