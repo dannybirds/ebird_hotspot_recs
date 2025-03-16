@@ -115,7 +115,23 @@ class EBirdAPICaller:
         """
         url = "https://api.ebird.org/v2/ref/taxonomy/ebird"
         params = {'fmt': 'json'}
-        return self.get_cache_or_fetch(url, params)    
+        return self.get_cache_or_fetch(url, params) 
+
+    def get_hotspots_in_region(self, region_id: str) -> Any:
+        """
+        Get a list of eBird hotspots in the target area.
+
+        Parameters:
+        target_area (TargetArea): The area to find hotspots in.
+
+        Returns:
+        list: A list of hotspot IDs.
+        """
+        url = f"https://api.ebird.org/v2/ref/hotspot/{region_id}"
+        params = {
+            'fmt': 'json'
+        }
+        return self.get_cache_or_fetch(url, params)   
 
 
 class EBirdAPIDataProvider(EBirdDataProvider):
@@ -178,3 +194,11 @@ class EBirdAPIDataProvider(EBirdDataProvider):
         """
         taxonomy = self.fetcher.get_taxonomy()
         return {species['sciName']: species['speciesCode'] for species in taxonomy}
+    
+    @functools.cache
+    def get_hotspots_in_area(self, target_area: TargetArea) -> list[str]:
+        if target_area.area_type == TargetAreaType.LAT_LONG or target_area.area_id is None:
+            raise NotImplementedError("Lat long targeting not yet implemented.")
+        locs = self.fetcher.get_hotspots_in_region(target_area.area_id)
+        return [loc['locId'] for loc in locs]
+

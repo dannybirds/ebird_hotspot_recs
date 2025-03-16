@@ -18,7 +18,7 @@ class DayWindowHistoricalSightingRecommender(HotspotRecommender):
     to find species that were recorded at the location.
     """
     
-    def __init__(self, historical_years: int=3, day_window: int=1, provider: EBirdDataProvider|None=None):
+    def __init__(self, historical_years: int=3, day_window: int=1, provider: EBirdDataProvider | None = None):
         """
         Initialize the recommender.
         

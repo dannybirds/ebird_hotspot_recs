@@ -8,14 +8,16 @@ from numpy.typing import NDArray
 
 from sitta.data.providers import EBirdDataProvider
 from sitta.predictors.base import BasePredictor
-from sitta.common.base import Species
+from sitta.common.base import Species, TargetArea, TargetAreaType
 
-def make_datapoints_for_location(provider: EBirdDataProvider, location_id: str, target_date: datetime, day_window: int, years: int) -> pd.DataFrame:
-    species_seen = {s.species_code: True for s in provider.get_species_seen(location_id, target_date)}
+def make_datapoints_for_location(provider: EBirdDataProvider, locality_id: str, target_date: datetime, day_window: int, years: int) -> pd.DataFrame:
+    
+    target_area = TargetArea(area_type=TargetAreaType.LOCALITY, area_id=locality_id)
+    species_seen = {s.species_code: True for s in provider.get_species_seen(target_area, target_date)}
     seen_df = pd.DataFrame(species_seen, index=pd.Index([target_date]))
 
     sightings_df = provider.make_historical_sightings_dataframe_for_location(
-        location_id,
+        target_area,
         datetime(target_date.year - 1, target_date.month, target_date.day),
         num_years=years,
         day_window=day_window
@@ -68,24 +70,39 @@ class SimpleNNPredictor(BasePredictor):
     A simple neural network predictor that predicts the probability of a species being seen at a location on a target date.
     """
     
-    def __init__(self, historical_years: int, day_window: int):
+    def __init__(self, provider: EBirdDataProvider, historical_years: int, day_window: int):
         """
         Initializes the predictor with a PyTorch model.
         
         Parameters:
         model (torch.nn.Module): The PyTorch model to use for predictions.
         """
+        self.provider = provider
         self.historical_years = historical_years
         self.day_window = day_window
+        self.model = None
 
     def input_dim(self) -> int:
         """
         Returns the input dimension of the model.
         """
         return self.historical_years * (self.day_window * 2 + 1)
+    
+    def load_model(self, model_file: str) -> None:
+        """
+        Loads the model from a file.
+        
+        Parameters:
+        model_file (str): The path to the model file.
+        
+        Returns:
+        torch.nn.Module: The loaded model.
+        """
+        self.model = LogisticRegression(self.input_dim())
+        self.model.load_state_dict(torch.load(model_file)) # pyright: ignore[reportUnknownMemberType]
 
 
-    def predict(self, location_id: str, target_date: datetime, species: Species) -> float:
+    def predict(self, locality_id: str, target_date: datetime, species: Species | str) -> float:
         """
         Predicts the probability of a species being seen at a location on a target date.
         
@@ -97,10 +114,24 @@ class SimpleNNPredictor(BasePredictor):
         Returns:
         float: The predicted probability of the species being seen at the location on the target date.
         """
-        # Convert inputs to tensors and pass through the
-        # model to get the prediction
-        # location_tensor = torch.tensor(location_id, dtype=torch.float32)
-        return 0.0
+        if not self.model:
+            raise ValueError("Model not loaded. Call load_model() first.")
+    
+        target_area = TargetArea(area_type=TargetAreaType.LOCALITY, area_id=locality_id)
+        sightings_df = self.provider.make_historical_sightings_dataframe_for_location(
+            target_area,
+            datetime(target_date.year - 1, target_date.month, target_date.day),
+            num_years=self.historical_years,
+            day_window=self.day_window
+        )
+        sightings_df = sightings_df.fillna(False) # type: ignore
+        sightings_df = self.provider.set_sightings_dataframe_names(sightings_df)
+        species_code = species.species_code if isinstance(species, Species) else species
+        if species_code not in sightings_df.columns:
+            input = torch.zeros((1, self.input_dim())) # pyright: ignore[reportUnknownMemberType]
+        else:
+            input = torch.from_numpy(sightings_df[species_code].values).float() # pyright: ignore[reportUnknownMemberType]
+        return self.model(input)
     
     def train(self, dataset: SimpleNNDataset, num_epochs: int = 10, model_file: str|None = None) -> torch.nn.Module:
         """

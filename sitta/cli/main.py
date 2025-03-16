@@ -13,6 +13,8 @@ from datetime import datetime
 
 from tqdm import tqdm
 
+from sitta.predictors.simple_nn_predictor import SimpleNNPredictor
+from sitta.recommenders.predictor_recommender import PredictorRecommender
 from sitta.data.ebird_api import EBirdAPIDataProvider
 from sitta.common.base import valid_date
 from sitta.data.data_handling import parse_life_list_csv
@@ -125,6 +127,9 @@ def run_e2e_eval(args: argparse.Namespace) -> None:
     recommenders: dict[str, HotspotRecommender] = {}
     recommenders['day_window'] = DayWindowHistoricalSightingRecommender(historical_years=5, day_window=7)
     recommenders['calendar_month'] = CalendarMonthHistoricalSightingRecommender(historical_years=5)
+    nn_predictor = SimpleNNPredictor(EBirdAPIDataProvider(), historical_years=10, day_window=7)
+    nn_predictor.load_model("/Users/dannywyatt/Documents/data/ebird/nn/lr.pth")
+    recommenders['simple_nn'] = PredictorRecommender(nn_predictor)
     
     # Run evaluation
     results = {n: aggregate_end_to_end_eval_metrics(run_end_to_end_evals(r, dataset, k=1)) for n, r in recommenders.items()}

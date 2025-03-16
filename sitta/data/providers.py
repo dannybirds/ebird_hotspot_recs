@@ -32,6 +32,7 @@ class EBirdDataProvider(ABC):
         return df
     
 
+    @functools.cache
     def make_historical_sightings_dataframe_for_location(self, target_area: TargetArea, target_date: datetime, num_years: int, day_window: int) -> pd.DataFrame:
         """
         Create a DataFrame of historical sightings for a given location and date.
@@ -78,6 +79,20 @@ class EBirdDataProvider(ABC):
         
         Returns:
         Sightings: A dictionary of species observed and the locations where they were seen.
+        """
+        pass
+
+    @abstractmethod
+    @functools.cache
+    def get_hotspots_in_area(self, target_area: TargetArea) -> list[str]:
+        """
+        Get a list of eBird hotspots in the target area.
+        
+        Parameters:
+        target_area (TargetArea): The area to find hotspots in.
+        
+        Returns:
+        list[str]: A list of eBird hotspot identifiers.
         """
         pass
 

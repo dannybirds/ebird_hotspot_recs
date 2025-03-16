@@ -10,7 +10,7 @@ class BasePredictor(ABC):
     """
     
     @abstractmethod
-    def predict(self, location_id: str, target_date: datetime, species: Species) -> float:
+    def predict(self, locality_id: str, target_date: datetime, species: Species | str) -> float:
         """
         Returns the probability of a species being seen at a location.
         """

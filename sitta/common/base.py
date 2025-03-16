@@ -20,6 +20,14 @@ class Species:
     species_code: str
     scientific_name: str
 
+    def __hash__(self) -> int:
+        return hash((self.common_name, self.species_code, self.scientific_name))
+    
+    def __eq__(self, value: object) -> bool:
+        if type(value) is not Species:
+            return False
+        return self.common_name == value.common_name and self.species_code == value.species_code and self.scientific_name == value.scientific_name
+
 
 # Type aliases for improved code readability
 type LifeList = dict[str, datetime]
@@ -57,6 +65,9 @@ class TargetArea:
             raise ValueError("Latitude and longitude must be provided for LAT_LONG type in TargetArea.")
         if self.area_type != TargetAreaType.LAT_LONG and self.area_id is None:
             raise ValueError("Area ID must be provided for non-LAT_LONG types in TargetArea.")
+        
+    def __hash__(self) -> int:
+        return hash((self.area_type, self.area_id, self.latitude, self.longitude))
 
 @dataclass(frozen=True)
 class Recommendation:
