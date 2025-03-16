@@ -78,7 +78,7 @@ def create_test_recommendations(
         
         recommendations.append(
             Recommendation(
-                location=loc_id,
+                locality_id=loc_id,
                 score=float(len(species_subset)),
                 species=species_subset
             )

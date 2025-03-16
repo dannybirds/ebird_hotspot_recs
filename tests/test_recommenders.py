@@ -30,8 +30,8 @@ class TestRecommenders(unittest.IsolatedAsyncioTestCase):
         recommendations = recommender.recommend(location, target_date, life_list)
 
         expected_recommendations = [
-            Recommendation(location="Location 1", score=2, species=[BLUE_JAY, ROBIN]),
-            Recommendation(location="Location 2", score=1, species=[BLUE_JAY])
+            Recommendation(locality_id="Location 1", score=2, species=[BLUE_JAY, ROBIN]),
+            Recommendation(locality_id="Location 2", score=1, species=[BLUE_JAY])
         ]
 
         self.assertCountEqual(recommendations, expected_recommendations)
@@ -42,9 +42,9 @@ class TestRecommenders(unittest.IsolatedAsyncioTestCase):
         
         # Create expected recommendations manually for clarity
         expected_recommendations = sorted([
-            Recommendation(location="L123452", score=1, species=[ROBIN]),
-            Recommendation(location="L123451", score=2, species=[ROBIN, BLUE_JAY]),
-            Recommendation(location="L123450", score=3, species=[ROBIN, BLUE_JAY, CARDINAL])
+            Recommendation(locality_id="L123452", score=1, species=[ROBIN]),
+            Recommendation(locality_id="L123451", score=2, species=[ROBIN, BLUE_JAY]),
+            Recommendation(locality_id="L123450", score=3, species=[ROBIN, BLUE_JAY, CARDINAL])
         ], key=lambda x: x.score, reverse=True)
 
         recommendations = sightings_to_recommendations(sightings)

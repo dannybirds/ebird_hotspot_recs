@@ -20,13 +20,13 @@ class TestEvaluate(unittest.TestCase):
 
     def test_evaluate_one_mismatch(self):
         recs = [
-            Recommendation(location="loc1", score=1.0, species=[CARDINAL]),
-            Recommendation(location="loc3", score=3.0, species=[CARDINAL])
+            Recommendation(locality_id="loc1", score=1.0, species=[CARDINAL]),
+            Recommendation(locality_id="loc3", score=3.0, species=[CARDINAL])
         ]
         
         ground_truth = [
-            Recommendation(location="loc1", score=1.0, species=[CARDINAL]),
-            Recommendation(location="loc2", score=2.0, species=[CARDINAL])
+            Recommendation(locality_id="loc1", score=1.0, species=[CARDINAL]),
+            Recommendation(locality_id="loc2", score=2.0, species=[CARDINAL])
         ]
         
         metrics = evaluate(recs, ground_truth)
@@ -36,13 +36,13 @@ class TestEvaluate(unittest.TestCase):
 
     def test_evaluate_no_matches(self):
         recs = [
-            Recommendation(location="loc3", score=3.0, species=[CARDINAL]),
-            Recommendation(location="loc4", score=4.0, species=[CARDINAL])
+            Recommendation(locality_id="loc3", score=3.0, species=[CARDINAL]),
+            Recommendation(locality_id="loc4", score=4.0, species=[CARDINAL])
         ]
         
         ground_truth = [
-            Recommendation(location="loc1", score=1.0, species=[CARDINAL]),
-            Recommendation(location="loc2", score=2.0, species=[CARDINAL])
+            Recommendation(locality_id="loc1", score=1.0, species=[CARDINAL]),
+            Recommendation(locality_id="loc2", score=2.0, species=[CARDINAL])
         ]
         
         metrics = evaluate(recs, ground_truth)
@@ -53,8 +53,8 @@ class TestEvaluate(unittest.TestCase):
     def test_evaluate_empty_recs(self):
         recs = []
         ground_truth = [
-            Recommendation(location="loc1", score=1.0, species=[CARDINAL]),
-            Recommendation(location="loc2", score=2.0, species=[CARDINAL])
+            Recommendation(locality_id="loc1", score=1.0, species=[CARDINAL]),
+            Recommendation(locality_id="loc2", score=2.0, species=[CARDINAL])
         ]
         
         metrics = evaluate(recs, ground_truth)
@@ -64,8 +64,8 @@ class TestEvaluate(unittest.TestCase):
 
     def test_evaluate_empty_ground_truth(self):
         recs = [
-            Recommendation(location="loc1", score=1.0, species=[CARDINAL]),
-            Recommendation(location="loc2", score=2.0, species=[CARDINAL])
+            Recommendation(locality_id="loc1", score=1.0, species=[CARDINAL]),
+            Recommendation(locality_id="loc2", score=2.0, species=[CARDINAL])
         ]
         ground_truth: list[Recommendation] = []
         

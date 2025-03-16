@@ -31,7 +31,7 @@ def sightings_to_recommendations(sightings: Sightings) -> list[Recommendation]:
     
     recs = [
         Recommendation(
-            location=loc,
+            locality_id=loc,
             score=len(species),
             species=sorted(list(species), key=lambda s: s.common_name)
         ) for loc, species in locs_to_species.items()

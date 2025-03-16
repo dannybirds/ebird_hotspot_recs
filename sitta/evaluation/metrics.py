@@ -45,7 +45,7 @@ def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation], k: 
     Returns:
     RecMetrics: Evaluation metrics.
     """
-    gt_dict = {r.location: r for r in ground_truth}
+    gt_dict = {r.locality_id: r for r in ground_truth}
     hits: set[str] = set()
     metrics: RecMetrics = RecMetrics()
     
@@ -58,16 +58,16 @@ def evaluate(recs: list[Recommendation], ground_truth: list[Recommendation], k: 
     
     # Evaluate each recommendation
     for rec in recs:
-        if rec.location in gt_dict:
-            hits.add(rec.location)
+        if rec.locality_id in gt_dict:
+            hits.add(rec.locality_id)
             # Give credit for all target species found, whether predicted or not
-            metrics.target_species_found += int(gt_dict[rec.location].score)
+            metrics.target_species_found += int(gt_dict[rec.locality_id].score)
         else:
             metrics.false_positive_hotspots += 1
     
     # Count missed locations
     for gt in gt_dict.values():
-        if gt.location not in hits:
+        if gt.locality_id not in hits:
             metrics.target_species_missed += int(gt.score)
     
     return metrics

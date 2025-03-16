@@ -241,7 +241,7 @@ class ClaudeRecommender(HotspotRecommender):
                     
                     recommendations.append(
                         Recommendation(
-                            location=rec["location"],
+                            locality_id=rec["location"],
                             score=float(rec["score"]) * 10,  # Scale to be comparable with other recommenders
                             species=species_list
                         )

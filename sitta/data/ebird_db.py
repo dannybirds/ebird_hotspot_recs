@@ -131,7 +131,7 @@ async def fetch_all_gt_hotspots(observer_id: str, life_list: LifeList, target_da
             continue
         if county not in gts:
             gts[county] = []
-        gts[county].append(Recommendation(location=row['locality_id'], score=row['c'], species=list(species_set)))
+        gts[county].append(Recommendation(locality_id=row['locality_id'], score=row['c'], species=list(species_set)))
     
     datapoints = [
         EndToEndEvalDatapoint(

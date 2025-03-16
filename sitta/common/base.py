@@ -32,14 +32,14 @@ class Recommendation:
     
     score should be interpretable as the expected number of species from the list that can be seen at the location.
     """
-    location: str
+    locality_id: str
     score: float
     species: list[Species]
 
     def __eq__(self, value: object) -> bool:
         if type(value) is not Recommendation:
             return False
-        return self.location == value.location and self.score == value.score and set(self.species) == set(value.species)
+        return self.locality_id == value.locality_id and self.score == value.score and set(self.species) == set(value.species)
 
 
 @dataclass
