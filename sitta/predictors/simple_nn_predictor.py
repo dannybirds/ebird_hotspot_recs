@@ -131,7 +131,9 @@ class SimpleNNPredictor(BasePredictor):
             input = torch.zeros((1, self.input_dim())) # pyright: ignore[reportUnknownMemberType]
         else:
             input = torch.from_numpy(sightings_df[species_code].values).float() # pyright: ignore[reportUnknownMemberType]
-        return self.model(input)
+        
+        p = self.model(input)
+        return p.item() # pyright: ignore[reportUnknownMemberType]
     
     def train(self, dataset: SimpleNNDataset, num_epochs: int = 10, model_file: str|None = None) -> torch.nn.Module:
         """
