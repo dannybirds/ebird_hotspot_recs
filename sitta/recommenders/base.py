@@ -5,7 +5,7 @@ Base recommender interfaces and common utility functions.
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from sitta.common.base import LifeList, Species, Recommendation, Sightings
+from sitta.common.base import LifeList, Species, Recommendation, Sightings, TargetArea
 
 
 def sightings_to_recommendations(sightings: Sightings) -> list[Recommendation]:
@@ -49,7 +49,7 @@ class HotspotRecommender(ABC):
     """
     
     @abstractmethod
-    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Generate recommendations for a given location, target date, and life list.
         

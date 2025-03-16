@@ -1,5 +1,5 @@
 from datetime import datetime
-from sitta.common.base import LifeList, Recommendation
+from sitta.common.base import LifeList, Recommendation, TargetArea
 from sitta.predictors.base import BasePredictor
 
 
@@ -20,7 +20,7 @@ class PredictorRecommender():
         """
         self.predictor = predictor
 
-    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         l: list[Recommendation] = []
         return l
         

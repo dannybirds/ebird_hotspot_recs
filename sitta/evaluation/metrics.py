@@ -8,7 +8,7 @@ from itertools import islice
 
 from tqdm import tqdm
 
-from sitta.common.base import EndToEndEvalDatapoint, Recommendation
+from sitta.common.base import EndToEndEvalDatapoint, Recommendation, TargetArea, TargetAreaType
 from sitta.recommenders.base import HotspotRecommender
 
 
@@ -92,7 +92,7 @@ def run_end_to_end_evals(
     return [
         evaluate(
             recommender.recommend(
-                datapoint.target_location,
+                TargetArea(area_type=TargetAreaType.COUNTY, area_id=datapoint.target_location),
                 datapoint.target_date,
                 datapoint.life_list
             ),

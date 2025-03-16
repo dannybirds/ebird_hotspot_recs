@@ -6,9 +6,9 @@ import urllib.error
 from typing import Any, Optional
 from datetime import datetime
 
-from sitta.common.base import LifeList, Recommendation, Species
+from sitta.data.ebird_api import EBirdAPIDataProvider
+from sitta.common.base import LifeList, Recommendation, Species, TargetArea, TargetAreaType
 from sitta.recommenders.base import  HotspotRecommender
-from sitta.data.data_handling import get_historical_species_seen_in_window
 
 class ClaudeRecommender(HotspotRecommender):
     """
@@ -45,6 +45,7 @@ class ClaudeRecommender(HotspotRecommender):
         self.day_window = day_window
         self.max_tokens = max_tokens
         self.temperature = temperature
+        self.provider = EBirdAPIDataProvider()
         
     def call_claude(self, prompt: str) -> dict[str, Any]:
         """
@@ -107,7 +108,7 @@ class ClaudeRecommender(HotspotRecommender):
         """Format the life list for including in the prompt."""
         return json.dumps({k: v.isoformat() for k, v in life_list.items()}, indent=2)
         
-    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Recommend hotspots based on Claude's analysis of historical data.
         
@@ -119,9 +120,12 @@ class ClaudeRecommender(HotspotRecommender):
         Returns:
         list[Recommendation]: A list of recommendations.
         """
+        if target_area.area_type == TargetAreaType.LAT_LONG or target_area.area_id is None:
+            raise NotImplementedError("Lat long targeting not yet implemented.")
+
         # Get historical data
-        historical_window = get_historical_species_seen_in_window(
-            location, target_date, num_years=self.historical_years, day_window=self.day_window
+        historical_window = self.provider.get_historical_species_seen_in_window(
+            target_area.area_id, target_date, num_years=self.historical_years, day_window=self.day_window
         )
         
         # Filter out species already on life list
@@ -129,7 +133,7 @@ class ClaudeRecommender(HotspotRecommender):
         
         # Format data for Claude
         prompt = f"""
-        I need recommendations for birding hotspots in location '{location}' on {target_date.strftime('%Y-%m-%d')}.
+        I need recommendations for birding hotspots in target area '{target_area}' on {target_date.strftime('%Y-%m-%d')}.
         
         The user has the following life list (species they've already seen):
         {self.format_life_list(life_list)}

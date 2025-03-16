@@ -6,7 +6,7 @@ from datetime import datetime
 
 from sitta.data.providers import EBirdDataProvider
 from sitta.data.ebird_api import EBirdAPIDataProvider
-from sitta.common.base import LifeList, Recommendation
+from sitta.common.base import LifeList, Recommendation, TargetArea, TargetAreaType
 from sitta.recommenders.base import HotspotRecommender, sightings_to_recommendations
 
 
@@ -31,7 +31,7 @@ class DayWindowHistoricalSightingRecommender(HotspotRecommender):
         provider = provider or EBirdAPIDataProvider()
         self.provider = provider 
 
-    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Generate recommendations based on historical sightings.
         
@@ -43,9 +43,11 @@ class DayWindowHistoricalSightingRecommender(HotspotRecommender):
         Returns:
         list[Recommendation]: List of recommendations.
         """
+        if target_area.area_type == TargetAreaType.LAT_LONG or target_area.area_id is None:
+            raise NotImplementedError("Lat long targeting not yet implemented.")
         # Read historical data for the target date
         historical_sightings = self.provider.get_historical_species_seen_in_window(
-            location,
+            target_area.area_id,
             target_date,
             num_years=self.historical_years,
             day_window=self.day_window
@@ -75,7 +77,7 @@ class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
         self.historical_years = historical_years
         self.provider = EBirdAPIDataProvider()
 
-    def recommend(self, location: str, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Generate recommendations based on historical month sightings.
         
@@ -87,9 +89,12 @@ class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
         Returns:
         list[Recommendation]: List of recommendations.
         """
+        if target_area.area_type == TargetAreaType.LAT_LONG or target_area.area_id is None:
+            raise NotImplementedError("Lat long targeting not yet implemented.")
+
         # Read historical data for the target month
         historical_sightings = self.provider.get_historical_species_seen_in_calendar_month(
-            location,
+            target_area.area_id,
             target_date,
             num_years=self.historical_years
         )

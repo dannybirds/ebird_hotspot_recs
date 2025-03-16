@@ -13,8 +13,9 @@ from datetime import datetime
 
 from tqdm import tqdm
 
+from sitta.data.ebird_api import EBirdAPIDataProvider
 from sitta.common.base import valid_date
-from sitta.data.data_handling import parse_life_list_csv, get_species_seen
+from sitta.data.data_handling import parse_life_list_csv
 from sitta.data.ebird_db import create_life_lists, fetch_all_gt_hotspots
 from sitta.common.base import EndToEndEvalDatapoint, from_json_object_hook, to_json_default
 from sitta.evaluation.metrics import (
@@ -39,8 +40,12 @@ def make_recommendation(args: argparse.Namespace) -> None:
     Parameters:
     args (argparse.Namespace): Command-line arguments.
     """
+
+    provider = EBirdAPIDataProvider()
+    sci_name_map = provider.sci_name_to_code_map()
+
     # Read life list and filter to only include species seen before the target date.
-    life_list = {k: v for k, v in parse_life_list_csv(args.life_list).items() if v < args.date}
+    life_list = {k: v for k, v in parse_life_list_csv(sci_name_map, args.life_list).items() if v < args.date}
 
     # Create and run recommender
     recommender = DayWindowHistoricalSightingRecommender(historical_years=5, day_window=7)
@@ -51,7 +56,7 @@ def make_recommendation(args: argparse.Namespace) -> None:
     print("\n")
 
     # Get actual sightings on the target date, filtered to only include species not in the life list
-    sightings = get_species_seen(args.location, args.date, window=0)
+    sightings = provider.get_species_seen(args.location, args.date, window=0)
     ground_truth_sightings = {
         k: v for k, v in sightings.items() 
         if k.species_code not in life_list

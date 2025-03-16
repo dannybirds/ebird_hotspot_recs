@@ -2,6 +2,7 @@
 Common data models and types used throughout the Sitta package.
 """
 
+from enum import Enum
 import logging
 
 from dataclasses import dataclass
@@ -24,6 +25,38 @@ class Species:
 type LifeList = dict[str, datetime]
 type Sightings = dict[Species, set[str]]
 
+
+class TargetAreaType(Enum):
+    """
+    Enum representing different types of areas that can be targeted for recommendations.
+    """
+    COUNTRY = "country"
+    STATE = "state"
+    COUNTY = "county"
+    LOCALITY = "locality"
+    LAT_LONG = "lat_long"
+
+@dataclass
+class TargetArea:
+    """
+    Represents a target area for birding recommendations.
+    
+    Attributes:
+        area_type (TargetAreaType): The type of area (e.g., country, state).
+        area_id (str): The identifier for the area.
+        latitude (float): Latitude of the area.
+        longitude (float): Longitude of the area.
+    """
+    area_type: TargetAreaType
+    area_id: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+
+    def __post_init__(self):
+        if self.area_type == TargetAreaType.LAT_LONG and (self.latitude is None or self.longitude is None):
+            raise ValueError("Latitude and longitude must be provided for LAT_LONG type in TargetArea.")
+        if self.area_type != TargetAreaType.LAT_LONG and self.area_id is None:
+            raise ValueError("Area ID must be provided for non-LAT_LONG types in TargetArea.")
 
 @dataclass(frozen=True)
 class Recommendation:
