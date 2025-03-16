@@ -5,6 +5,7 @@ Base recommender interfaces and common utility functions.
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+from sitta.data.providers import EBirdDataProvider
 from sitta.common.base import LifeList, Species, Recommendation, Sightings, TargetArea
 
 
@@ -62,3 +63,63 @@ class HotspotRecommender(ABC):
         list[Recommendation]: List of recommendations sorted by score.
         """
         pass
+    
+
+class CandidateSpeciesRetriever(ABC):
+    """
+    Abstract base class for retrieving candidate species for target area and date.
+    
+    Implementations should provide a get_candidate_species method that returns a list of species
+    that are likely to be seen in the given area on the given date. This is useful for finding
+    unseen target species given a list of previously seen species.
+    """
+    
+    @abstractmethod
+    def get_candidate_species(self, target_area: TargetArea, target_date: datetime) -> Sightings:
+        """
+        Retrieve candidate species for a given location and date.
+        
+        Parameters:
+        target_area (TargetArea): The target area to retrieve candidate species for.
+        target_date (datetime): The date to retrieve candidate species for.
+        
+        Returns:
+        list[Species]: List of candidate species.
+        """
+        pass
+
+class HistoricalDayWindowCandidateSpeciesRetriever(CandidateSpeciesRetriever):
+    """
+    Retriever for species previosly observed in target area and around date.
+    
+    Parameters:
+    provider (EBirdDataProvider): The data provider to use for retrieving species.
+    num_years (int): The number of years to look back for historical sightings.
+    day_window (int): The number of days around the target date (in previous years) to consider.
+    """
+
+    def __init__(self, provider: EBirdDataProvider, num_years: int, day_window: int) -> None:
+        super().__init__()
+        self.provider = provider
+        self.num_years = num_years
+        self.day_window = day_window
+    
+    
+    def get_candidate_species(self, target_area: TargetArea, target_date: datetime) -> Sightings:
+        """
+        Retrieve historically observed species for a given location and date.
+        
+        Parameters:
+        target_area (TargetArea): The target area to retrieve historically observed species for.
+        target_date (datetime): The date to retrieve historically observed species for.
+        
+        Returns:
+        list[Species]: List of historically observed species.
+        """
+        s = self.provider.get_historical_species_seen_in_window(
+            target_area,
+            target_date,
+            num_years=self.num_years,
+            day_window=self.day_window
+        )
+        return s

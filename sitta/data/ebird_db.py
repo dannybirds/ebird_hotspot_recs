@@ -9,7 +9,7 @@ from datetime import datetime
 import psycopg.rows
 
 from sitta.data.providers import EBirdDataProvider
-from sitta.common.base import EndToEndEvalDatapoint, LifeList, Recommendation, Sightings, Species
+from sitta.common.base import EndToEndEvalDatapoint, LifeList, Recommendation, Sightings, Species, TargetArea, TargetAreaType
 
 DB_NAME = "ebird_us"
 LOCALITIES_TABLE = "localities"
@@ -169,7 +169,7 @@ class LocalDBDataProvider(EBirdDataProvider):
             raise ValueError("postgres_pwd must be provided or set as POSTGRES_PWD environment variable")
         self.postgres_pwd = postgres_pwd
 
-    def get_species_seen_on_dates(self, location_id: str, target_dates: list[datetime]) -> Sightings:
+    def get_species_seen_on_dates(self, target_area: TargetArea, target_dates: list[datetime]) -> Sightings:
         """
         Get species observed using the local database.
         
@@ -181,6 +181,8 @@ class LocalDBDataProvider(EBirdDataProvider):
         Sightings: A dictionary of species observed and the locations where they were seen, 
         which can be sub-locations of the given location_id (e.g. hotspots within a county).
         """
+        if target_area.area_type == TargetAreaType.LAT_LONG or target_area.area_id is None:
+            raise NotImplementedError("Lat long targeting not yet implemented.")
         species_seen: dict[Species, set[str]] = {}
         with open_connection() as conn:
             with conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
@@ -193,7 +195,7 @@ class LocalDBDataProvider(EBirdDataProvider):
                     AND observation_date = ANY(%s)
                 GROUP BY observation_date, species_code, scientific_name, common_name ;
                 """
-                cur.execute(q, [location_id, target_dates])
+                cur.execute(q, [target_area.area_id, target_dates])
                 rows = cur.fetchall()
                 
                 for row in rows:

@@ -12,7 +12,7 @@ import urllib.parse
 import json
 import logging
 
-from sitta.common.base import Sightings, Species
+from sitta.common.base import Sightings, Species, TargetArea, TargetAreaType
 from sitta.data.providers import EBirdDataProvider
 
 DEFAULT_CACHE_DIR = os.path.expanduser("~/.ebird-api-cache")
@@ -132,7 +132,7 @@ class EBirdAPIDataProvider(EBirdDataProvider):
         """
         self.fetcher = EBirdAPICaller(api_key=api_key)
     
-    def get_species_seen_on_dates(self, location_id: str, target_dates: list[datetime]) -> Sightings:
+    def get_species_seen_on_dates(self, target_area: TargetArea, target_dates: list[datetime]) -> Sightings:
         """
         Get species observed using the eBird API.
         
@@ -145,9 +145,12 @@ class EBirdAPIDataProvider(EBirdDataProvider):
         which can be sub-locations of the given location_id (e.g. hotspots within a county).
         """
         
+        if target_area.area_type == TargetAreaType.LAT_LONG or target_area.area_id is None:
+            raise NotImplementedError("Lat long targeting not yet implemented.")
+
         species_seen: dict[Species, set[str]] = {}
         for d in target_dates:
-            observations = self.fetcher.get_observations_on_date(location_id, d)
+            observations = self.fetcher.get_observations_on_date(target_area.area_id, d)
             if observations:
                 for species in observations:
                     if species.get('locationPrivate', False):
