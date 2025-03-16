@@ -50,14 +50,29 @@ class HotspotRecommender(ABC):
     """
     
     @abstractmethod
-    def recommend(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, species: list[Species|str]) -> list[Recommendation]:
         """
-        Generate recommendations for a given location, target date, and life list.
+        Generate hotspot recommendations for a target area, date, and species list.
         
         Parameters:
-        location (str): The eBird location ID to generate recommendations for.
+        target_area (TargetArea): The target area to generate recommendations for.
         target_date (datetime): The date to generate recommendations for.
-        life_list (LifeList): The user's life list of species already seen.
+        species (list[Species|str]): The list of species to consider for recommendations, can be Species objects or species codes.
+        
+        Returns:
+        list[Recommendation]: List of recommendations sorted by score.
+        """
+        pass
+
+    @abstractmethod
+    def recommend_from_life_list(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+        """
+        Generate hotspot recommendations for a target area and date, that should included species not in the given life list.
+        
+        Parameters:
+        target_area (TargetArea): The target area to generate recommendations for.
+        target_date (datetime): The date to generate recommendations for.
+        life_list (LifeList): The list of species to avoid.
         
         Returns:
         list[Recommendation]: List of recommendations sorted by score.

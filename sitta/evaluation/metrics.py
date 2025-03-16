@@ -91,7 +91,7 @@ def run_end_to_end_evals(
     """
     return [
         evaluate(
-            recommender.recommend(
+            recommender.recommend_from_life_list(
                 TargetArea(area_type=TargetAreaType.COUNTY, area_id=datapoint.target_location),
                 datapoint.target_date,
                 datapoint.life_list

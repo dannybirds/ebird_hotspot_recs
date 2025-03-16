@@ -49,7 +49,7 @@ def make_recommendation(args: argparse.Namespace) -> None:
 
     # Create and run recommender
     recommender = DayWindowHistoricalSightingRecommender(historical_years=5, day_window=7)
-    recs = recommender.recommend(args.location, args.date, life_list)
+    recs = recommender.recommend_from_life_list(args.location, args.date, life_list)
     
     print("RECOMMENDATIONS\n")
     pprint.pp(recs)

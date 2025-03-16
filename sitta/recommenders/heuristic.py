@@ -6,7 +6,7 @@ from datetime import datetime
 
 from sitta.data.providers import EBirdDataProvider
 from sitta.data.ebird_api import EBirdAPIDataProvider
-from sitta.common.base import LifeList, Recommendation, TargetArea, TargetAreaType
+from sitta.common.base import LifeList, Recommendation, Species, TargetArea, TargetAreaType
 from sitta.recommenders.base import HistoricalDayWindowCandidateSpeciesRetriever, HotspotRecommender, sightings_to_recommendations
 
 
@@ -36,7 +36,10 @@ class DayWindowHistoricalSightingRecommender(HotspotRecommender):
             day_window=day_window
         )
 
-    def recommend(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, species: list[Species|str]) -> list[Recommendation]:
+        raise NotImplementedError("This recommender does not support species targeting yet.")
+
+    def recommend_from_life_list(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Generate recommendations based on historical sightings.
         
@@ -80,7 +83,10 @@ class CalendarMonthHistoricalSightingRecommender(HotspotRecommender):
         self.historical_years = historical_years
         self.provider = EBirdAPIDataProvider()
 
-    def recommend(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, species: list[Species|str]) -> list[Recommendation]:
+        raise NotImplementedError("This recommender does not support species targeting yet.")
+
+    def recommend_from_life_list(self, target_area: TargetArea, target_date: datetime, life_list: LifeList) -> list[Recommendation]:
         """
         Generate recommendations based on historical month sightings.
         
