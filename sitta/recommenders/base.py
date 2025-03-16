@@ -50,7 +50,7 @@ class HotspotRecommender(ABC):
     """
     
     @abstractmethod
-    def recommend(self, target_area: TargetArea, target_date: datetime, species: list[Species|str]) -> list[Recommendation]:
+    def recommend(self, target_area: TargetArea, target_date: datetime, species: list[Species] | list[str]) -> list[Recommendation]:
         """
         Generate hotspot recommendations for a target area, date, and species list.
         
